@@ -16,10 +16,16 @@ var defined = H.defined,
  */
 H.colorPointMixin = {
 	/**
-	 * Color points have a value option that determines whether or not it is a null point
+	 * Color points have a value option that determines whether or not it is
+	 * a null point
 	 */
 	isValid: function () {
-		return this.value !== null;
+		// undefined is allowed
+		return (
+			this.value !== null &&
+			this.value !== Infinity &&
+			this.value !== -Infinity
+		);
 	},
 
 	/**
@@ -60,7 +66,8 @@ H.colorSeriesMixin = {
 	/*= } =*/
 	
 	/**
-	 * In choropleth maps, the color is a result of the value, so this needs translation too
+	 * In choropleth maps, the color is a result of the value, so this needs
+	 * translation too
 	 */
 	translateColors: function () {
 		var series = this,
@@ -73,7 +80,13 @@ H.colorSeriesMixin = {
 				color;
 
 			color = point.options.color ||
-				(point.isNull ? nullColor : (colorAxis && value !== undefined) ? colorAxis.toColor(value, point) : point.color || series.color);
+				(
+					point.isNull ?
+						nullColor :
+						(colorAxis && value !== undefined) ?
+							colorAxis.toColor(value, point) :
+							point.color || series.color
+				);
 
 			if (color) {
 				point.color = color;

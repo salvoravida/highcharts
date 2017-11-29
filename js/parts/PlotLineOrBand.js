@@ -5,6 +5,7 @@
  */
 'use strict';
 import H from './Globals.js';
+import Axis from './Axis.js';
 import './Utilities.js';
 var arrayMax = H.arrayMax,
 	arrayMin = H.arrayMin,
@@ -48,13 +49,12 @@ H.PlotLineOrBand.prototype = {
 			svgElem = plotLine.svgElem,
 			isNew = !svgElem,
 			path = [],
-			addEvent,
-			eventType,
 			color = options.color,
 			zIndex = pick(options.zIndex, 0),
 			events = options.events,
 			attribs = {
-				'class': 'highcharts-plot-' + (isBand ? 'band ' : 'line ') + (options.className || '')
+				'class': 'highcharts-plot-' + (isBand ? 'band ' : 'line ') +
+					(options.className || '')
 			},
 			groupAttribs = {},
 			renderer = axis.chart.renderer,
@@ -97,8 +97,9 @@ H.PlotLineOrBand.prototype = {
 
 		group = axis.plotLinesAndBandsGroups[groupName];
 		if (!group) {
-			axis.plotLinesAndBandsGroups[groupName] = group = renderer.g('plot-' + groupName)
-				.attr(groupAttribs).add();
+			axis.plotLinesAndBandsGroups[groupName] = group =
+				renderer.g('plot-' + groupName)
+					.attr(groupAttribs).add();
 		}
 
 		// Create the path
@@ -126,14 +127,11 @@ H.PlotLineOrBand.prototype = {
 
 			// events
 			if (events) {
-				addEvent = function (eventType) {
+				H.objectEach(events, function (event, eventType) {
 					svgElem.on(eventType, function (e) {
 						events[eventType].apply(plotLine, [e]);
 					});
-				};
-				for (eventType in events) {
-					addEvent(eventType);
-				}
+				});
 			}
 		} else if (svgElem) {
 			if (path) {
@@ -148,8 +146,15 @@ H.PlotLineOrBand.prototype = {
 		}
 
 		// the plot band/line label
-		if (optionsLabel && defined(optionsLabel.text) && path && path.length && 
-				axis.width > 0 && axis.height > 0 && !path.flat) {
+		if (
+			optionsLabel &&
+			defined(optionsLabel.text) &&
+			path &&
+			path.length && 
+			axis.width > 0 &&
+			axis.height > 0 &&
+			!path.flat
+		) {
 			// apply defaults
 			optionsLabel = merge({
 				align: horiz && isBand && 'center',
@@ -177,8 +182,8 @@ H.PlotLineOrBand.prototype = {
 			label = plotLine.label,
 			renderer = plotLine.axis.chart.renderer,
 			attribs,
-			xs,
-			ys,
+			xBounds,
+			yBounds,
 			x,
 			y;
 
@@ -187,7 +192,8 @@ H.PlotLineOrBand.prototype = {
 			attribs = {
 				align: optionsLabel.textAlign || optionsLabel.align,
 				rotation: optionsLabel.rotation,
-				'class': 'highcharts-plot-' + (isBand ? 'band' : 'line') + '-label ' + (optionsLabel.className || '')
+				'class': 'highcharts-plot-' + (isBand ? 'band' : 'line') +
+					'-label ' + (optionsLabel.className || '')
 			};
 			
 			attribs.zIndex = zIndex;
@@ -208,16 +214,19 @@ H.PlotLineOrBand.prototype = {
 
 		// get the bounding box and align the label
 		// #3000 changed to better handle choice between plotband or plotline
-		xs = [path[1], path[4], (isBand ? path[6] : path[1])];
-		ys = [path[2], path[5], (isBand ? path[7] : path[2])];
-		x = arrayMin(xs);
-		y = arrayMin(ys);
+		xBounds = path.xBounds ||
+			[path[1], path[4], (isBand ? path[6] : path[1])];
+		yBounds = path.yBounds ||
+			[path[2], path[5], (isBand ? path[7] : path[2])];
+		
+		x = arrayMin(xBounds);
+		y = arrayMin(yBounds);
 
 		label.align(optionsLabel, false, {
 			x: x,
 			y: y,
-			width: arrayMax(xs) - x,
-			height: arrayMax(ys) - y
+			width: arrayMax(xBounds) - x,
+			height: arrayMax(yBounds) - y
 		});
 		label.show();
 	},
@@ -239,17 +248,28 @@ H.PlotLineOrBand.prototype = {
  * @todo Extend directly instead of adding object to Highcharts first
  */
 
-H.AxisPlotLineOrBandExtension = {
+H.extend(Axis.prototype, /** @lends Highcharts.Axis.prototype */ {
 
 	/**
-	 * Create the path for a plot band
+	 * Internal function to create the SVG path definition for a plot band.
+	 *
+	 * @param  {Number} from
+	 *         The axis value to start from.
+	 * @param  {Number} to
+	 *         The axis value to end on.
+	 *
+	 * @return {Array.<String|Number>}
+	 *         The SVG path definition in array form.
 	 */
 	getPlotBandPath: function (from, to) {
 		var toPath = this.getPlotLinePath(to, null, null, true),
 			path   = this.getPlotLinePath(from, null, null, true),
+			result = [],
+			i,
 			// #4964 check if chart is inverted or plotband is on yAxis 
 			horiz  = this.horiz,
 			plus = 1,
+			flat,
 			outside =
 				(from < this.min && to < this.min) ||
 				(from > this.max && to > this.max);
@@ -258,36 +278,84 @@ H.AxisPlotLineOrBandExtension = {
 			
 			// Flat paths don't need labels (#3836)
 			if (outside) {
-				path.flat = path.toString() === toPath.toString();
+				flat = path.toString() === toPath.toString();
 				plus = 0;
 			}
 
-			// Add 1 pixel, when coordinates are the same
-			path.push(
-				horiz && toPath[4] === path[4] ? toPath[4] + plus : toPath[4], 
-				!horiz && toPath[5] === path[5] ? toPath[5] + plus : toPath[5],
-				horiz && toPath[1] === path[1] ? toPath[1] + plus : toPath[1],
-				!horiz && toPath[2] === path[2] ? toPath[2] + plus : toPath[2]
-			);
+			// Go over each subpath - for panes in Highstock
+			for (i = 0; i < path.length; i += 6) {
+
+				// Add 1 pixel when coordinates are the same
+				if (horiz && toPath[i + 1] === path[i + 1]) {
+					toPath[i + 1] += plus;
+					toPath[i + 4] += plus;
+				} else if (!horiz && toPath[i + 2] === path[i + 2]) {
+					toPath[i + 2] += plus;
+					toPath[i + 5] += plus;
+				}
+
+				result.push(
+					'M',
+					path[i + 1],
+					path[i + 2],
+					'L',
+					path[i + 4],
+					path[i + 5],
+					toPath[i + 4],
+					toPath[i + 5],
+					toPath[i + 1],
+					toPath[i + 2],
+					'z'
+				);
+				result.flat = flat;
+			}
+
 		} else { // outside the axis area
 			path = null;
 		}
 
-		return path;
+		return result;
 	},
 
+	/**
+	 * Add a plot band after render time.
+	 *
+	 * @param  {AxisPlotBandsOptions} options
+	 *         A configuration object for the plot band, as defined in {@link
+	 *         https://api.highcharts.com/highcharts/xAxis.plotBands|
+	 *         xAxis.plotBands}.
+	 * @return {Object}
+	 *         The added plot band.
+	 * @sample highcharts/members/axis-addplotband/
+	 *         Toggle the plot band from a button
+	 */
 	addPlotBand: function (options) {
 		return this.addPlotBandOrLine(options, 'plotBands');
 	},
 
+	/**
+	 * Add a plot line after render time.
+	 * 
+	 * @param  {AxisPlotLinesOptions} options
+	 *         A configuration object for the plot line, as defined in {@link
+	 *         https://api.highcharts.com/highcharts/xAxis.plotLines|
+	 *         xAxis.plotLines}.
+	 * @return {Object}
+	 *         The added plot line.
+	 * @sample highcharts/members/axis-addplotline/
+	 *         Toggle the plot line from a button
+	 */
 	addPlotLine: function (options) {
 		return this.addPlotBandOrLine(options, 'plotLines');
 	},
 
 	/**
-	 * Add a plot band or plot line after render time
+	 * Add a plot band or plot line after render time. Called from addPlotBand
+	 * and addPlotLine internally.
 	 *
-	 * @param options {Object} The plotBand or plotLine configuration object
+	 * @private
+	 * @param  options {AxisPlotLinesOptions|AxisPlotBandsOptions}
+	 *         The plotBand or plotLine configuration object.
 	 */
 	addPlotBandOrLine: function (options, coll) {
 		var obj = new H.PlotLineOrBand(this, options).render(),
@@ -306,8 +374,11 @@ H.AxisPlotLineOrBandExtension = {
 	},
 
 	/**
-	 * Remove a plot band or plot line from the chart by id
-	 * @param {Object} id
+	 * Remove a plot band or plot line from the chart by id. Called internally
+	 * from `removePlotBand` and `removePlotLine`.
+	 *
+	 * @private
+	 * @param {String} id
 	 */
 	removePlotBandOrLine: function (id) {
 		var plotLinesAndBands = this.plotLinesAndBands,
@@ -319,7 +390,12 @@ H.AxisPlotLineOrBandExtension = {
 				plotLinesAndBands[i].destroy();
 			}
 		}
-		each([options.plotLines || [], userOptions.plotLines || [], options.plotBands || [], userOptions.plotBands || []], function (arr) {
+		each([
+			options.plotLines || [],
+			userOptions.plotLines || [],
+			options.plotBands || [],
+			userOptions.plotBands || []
+		], function (arr) {
 			i = arr.length;
 			while (i--) {
 				if (arr[i].id === id) {
@@ -327,5 +403,34 @@ H.AxisPlotLineOrBandExtension = {
 				}
 			}
 		});
+	},
+
+	/**
+	 * Remove a plot band by its id.
+	 * 
+	 * @param  {String} id
+	 *         The plot band's `id` as given in the original configuration
+	 *         object or in the `addPlotBand` option.
+	 * @sample highcharts/members/axis-removeplotband/
+	 *         Remove plot band by id
+	 * @sample highcharts/members/axis-addplotband/
+	 *         Toggle the plot band from a button
+	 */
+	removePlotBand: function (id) {
+		this.removePlotBandOrLine(id);
+	},
+
+	/**
+	 * Remove a plot line by its id.
+	 * @param  {String} id
+	 *         The plot line's `id` as given in the original configuration
+	 *         object or in the `addPlotLine` option.
+	 * @sample highcharts/xaxis/plotlines-id/
+	 *         Remove plot line by id
+	 * @sample highcharts/members/axis-addplotline/
+	 *         Toggle the plot line from a button
+	 */
+	removePlotLine: function (id) {
+		this.removePlotBandOrLine(id);
 	}
-};
+});

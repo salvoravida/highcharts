@@ -1,18 +1,18 @@
-
-
 // Give the points a 3D feel by adding a radial gradient
-Highcharts.getOptions().colors = $.map(Highcharts.getOptions().colors, function (color) {
-    return {
-        radialGradient: {
-            cx: 0.4,
-            cy: 0.3,
-            r: 0.5
-        },
-        stops: [
-            [0, color],
-            [1, Highcharts.Color(color).brighten(-0.2).get('rgb')]
-        ]
-    };
+Highcharts.setOptions({
+    colors: $.map(Highcharts.getOptions().colors, function (color) {
+        return {
+            radialGradient: {
+                cx: 0.4,
+                cy: 0.3,
+                r: 0.5
+            },
+            stops: [
+                [0, color],
+                [1, Highcharts.Color(color).brighten(-0.2).get('rgb')]
+            ]
+        };
+    })
 });
 
 // Set up the chart
@@ -20,7 +20,7 @@ var chart = new Highcharts.Chart({
     chart: {
         renderTo: 'container',
         margin: 100,
-        type: 'scatter',
+        type: 'scatter3d',
         options3d: {
             enabled: true,
             alpha: 10,
@@ -78,8 +78,8 @@ var chart = new Highcharts.Chart({
 $(chart.container).on('mousedown.hc touchstart.hc', function (eStart) {
     eStart = chart.pointer.normalize(eStart);
 
-    var posX = eStart.pageX,
-        posY = eStart.pageY,
+    var posX = eStart.chartX,
+        posY = eStart.chartY,
         alpha = chart.options.chart.options3d.alpha,
         beta = chart.options.chart.options3d.beta,
         newAlpha,
@@ -87,13 +87,14 @@ $(chart.container).on('mousedown.hc touchstart.hc', function (eStart) {
         sensitivity = 5; // lower is more sensitive
 
     $(document).on({
-        'mousemove.hc touchdrag.hc': function (e) {
+        'mousemove.hc touchmove.hc': function (e) {
             // Run beta
-            newBeta = beta + (posX - e.pageX) / sensitivity;
+            e = chart.pointer.normalize(e);
+            newBeta = beta + (posX - e.chartX) / sensitivity;
             chart.options.chart.options3d.beta = newBeta;
 
             // Run alpha
-            newAlpha = alpha + (e.pageY - posY) / sensitivity;
+            newAlpha = alpha + (e.chartY - posY) / sensitivity;
             chart.options.chart.options3d.alpha = newAlpha;
 
             chart.redraw(false);

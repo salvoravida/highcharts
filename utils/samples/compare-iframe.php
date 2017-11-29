@@ -3,6 +3,10 @@ ini_set('display_errors', 'on');
 session_start();
 require_once('../settings.php');
 
+// When emulating karma, load all Highcharts files
+$emulateKarma = false;
+
+
 // Server variables
 $httpHost = $_SERVER['HTTP_HOST'];
 $httpHost = explode('.', $httpHost);
@@ -108,12 +112,37 @@ function getJS() {
 }
 
 function getHTML($which) {
-	global $path, $leftPath, $rightPath, $rightExporting, $leftExporting, $isUnitTest, $githubServer;
+	global $path, $leftPath, $rightPath, $rightExporting, $leftExporting,
+		$isUnitTest, $githubServer, $topDomain, $emulateKarma;
 	$bogus = md5('bogus');
 
+	
 	// No idea why file_get_contents doesn't work here...
 	ob_start();
-	if (is_file("$path/demo.html")) {
+
+	if ($emulateKarma && $isUnitTest) {
+		$files = json_decode(
+			file_get_contents(__DIR__ . '/../../test/karma-files.json')
+		);
+		$scripttags = '';
+
+		foreach ($files as $file) {
+			$file = preg_replace('/^code\//', "http://code.highcharts.$topDomain/", $file);
+			$scripttags .= "<script src='$file'></script>\n";
+		}
+
+		echo '<html>
+	<head>
+		' . $scripttags . '
+	</head>
+	<body>
+		<div id="qunit"></div>
+		<div id="qunit-fixture"></div>
+
+		<div id="container" style="width: 600px; margin: 0 auto"></div>
+	</body>
+</html>';
+	} elseif (is_file("$path/demo.html")) {
 		include("$path/demo.html");
 
 	} elseif ($which === 'right') {
@@ -152,7 +181,7 @@ function getHTML($which) {
 		throw window.demoError;
 		</script>";
 	}
-	if (strstr($s, '.src.js')) {
+	if (strstr($s, '.src.js') && !$emulateKarma) {
 		$s .= "
 		<script>
 		window.demoError = 'Do not use src.js files in demos. Use .js compiled files, and add rewrite in .htaccess ($path)';
@@ -223,6 +252,7 @@ function getExportInnerHTML() {
 <html>
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>Highcharts demo</title>
 		<?php echo getFramework($_GET['which'] === 'left' ? $leftFramework : $rightFramework); ?>
 		<?php echo getResources(); ?>
@@ -231,7 +261,7 @@ function getExportInnerHTML() {
 		<script src="cache.php?file=http://code.jquery.com/qunit/qunit-<?php echo Settings::$QUnitVersion; ?>.js"></script>
 		<link rel="stylesheet" type="text/css" href="cache.php?file=http://code.jquery.com/qunit/qunit-<?php echo Settings::$QUnitVersion; ?>.css" />
    		<?php endif; ?>
-   		<script src="test-controller.js"></script>
+   		<script src="test-controller.js?<?php echo uniqid(); ?>"></script>
 
 		<link rel="stylesheet" type="text/css" href="style.css"/>
 		<style type="text/css">
@@ -368,13 +398,18 @@ function getExportInnerHTML() {
 			}
 
 			function error(e) {
-				e = 'ERROR (' + which + ' frame): ' + (e.message || e);
-				console.error(e);
-				parent.window.error = e;
-				parent.window.onDifferent('Error');
+				if (which === 'right') {
+					e = 'ERROR (' + which + ' frame): ' + (e.message || e);
+					console.error(e);
+					parent.window.error = e;
+					parent.window.onDifferent('Error');
+				}
 			}
 
 			function tryToRun(proceed) {
+				if (typeof QUnit !== 'undefined' && proceed) { // Let QUnit catch the error
+					return proceed.apply(this, Array.prototype.slice.call(arguments, 1));
+				}
 				try {
 					if (proceed) {
 						return proceed.apply(this, Array.prototype.slice.call(arguments, 1));
@@ -454,6 +489,7 @@ function getExportInnerHTML() {
 							hoverPoint = series[0] && series[0].points[x],
 							pointOrPoints;
 						if (hoverPoint) {
+							/*
 							if  (chart.tooltip.options.shared) {
 								pointOrPoints = [];
 								Highcharts.each(series, function (s) {
@@ -467,9 +503,10 @@ function getExportInnerHTML() {
 							} else {
 								pointOrPoints = hoverPoint;
 							}
+							*/
 							hoverPoint.onMouseOver();
 							// Note: As of 5.0.8 onMouseOver takes care of refresh.
-							chart.tooltip.refresh(pointOrPoints);
+							//chart.tooltip.refresh(pointOrPoints);
 						}
 					});
 					<?php endif ?>

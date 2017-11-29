@@ -3,6 +3,7 @@
  *
  * License: www.highcharts.com/license
  */
+/* eslint max-len: ["warn", 80, 4] */
 'use strict';
 import H from './Globals.js';
 import './Utilities.js';
@@ -16,6 +17,7 @@ var attr = H.attr,
 	isFirefox = H.isFirefox,
 	isMS = H.isMS,
 	isWebKit = H.isWebKit,
+	pick = H.pick,
 	pInt = H.pInt,
 	SVGElement = H.SVGElement,
 	SVGRenderer = H.SVGRenderer,
@@ -50,8 +52,8 @@ extend(SVGElement.prototype, /** @lends SVGElement.prototype */ {
 
 	/**
 	 * VML and useHTML method for calculating the bounding box based on offsets
-	 * @param {Boolean} refresh Whether to force a fresh value from the DOM or to
-	 * use the cached value
+	 * @param {Boolean} refresh Whether to force a fresh value from the DOM or
+	 * to use the cached value.
 	 *
 	 * @return {Object} A hash containing values for x, y, width and height
 	 */
@@ -59,12 +61,6 @@ extend(SVGElement.prototype, /** @lends SVGElement.prototype */ {
 	htmlGetBBox: function () {
 		var wrapper = this,
 			element = wrapper.element;
-
-		// faking getBBox in exported SVG in legacy IE
-		// faking getBBox in exported SVG in legacy IE (is this a duplicate of the fix for #1079?)
-		if (element.nodeName === 'text') {
-			element.style.position = 'absolute';
-		}
 
 		return {
 			x: element.offsetLeft,
@@ -126,26 +122,41 @@ extend(SVGElement.prototype, /** @lends SVGElement.prototype */ {
 				baseline,
 				textWidth = pInt(wrapper.textWidth),
 				whiteSpace = styles && styles.whiteSpace,
-				currentTextTransform = [rotation, align, elem.innerHTML, wrapper.textWidth, wrapper.textAlign].join(',');
+				currentTextTransform = [
+					rotation,
+					align,
+					elem.innerHTML,
+					wrapper.textWidth,
+					wrapper.textAlign
+				].join(',');
 
-			if (currentTextTransform !== wrapper.cTT) { // do the calculations and DOM access only if properties changed
+			// Do the calculations and DOM access only if properties changed
+			if (currentTextTransform !== wrapper.cTT) {
 
 
 				baseline = renderer.fontMetrics(elem.style.fontSize).b;
 
 				// Renderer specific handling of span rotation
 				if (defined(rotation)) {
-					wrapper.setSpanRotation(rotation, alignCorrection, baseline);
+					wrapper.setSpanRotation(
+						rotation,
+						alignCorrection,
+						baseline
+					);
 				}
 
-				// Reset multiline/ellipsis in order to read width (#4928, #5417)
+				// Reset multiline/ellipsis in order to read width (#4928,
+				// #5417)
 				css(elem, {
 					width: '',
 					whiteSpace: whiteSpace || 'nowrap'
 				});
 
 				// Update textWidth
-				if (elem.offsetWidth > textWidth && /[ \-]/.test(elem.textContent || elem.innerText)) { // #983, #1254
+				if (
+					elem.offsetWidth > textWidth &&
+					/[ \-]/.test(elem.textContent || elem.innerText)
+				) { // #983, #1254
 					css(elem, {
 						width: textWidth + 'px',
 						display: 'block',
@@ -154,7 +165,13 @@ extend(SVGElement.prototype, /** @lends SVGElement.prototype */ {
 				}
 
 
-				wrapper.getSpanCorrection(elem.offsetWidth, baseline, alignCorrection, rotation, align);
+				wrapper.getSpanCorrection(
+					elem.offsetWidth,
+					baseline,
+					alignCorrection,
+					rotation,
+					align
+				);
 			}
 
 			// apply position with correction
@@ -163,9 +180,11 @@ extend(SVGElement.prototype, /** @lends SVGElement.prototype */ {
 				top: (y + (wrapper.yCorr || 0)) + 'px'
 			});
 
-			// force reflow in webkit to apply the left and top on useHTML element (#1249)
+			// Force reflow in webkit to apply the left and top on useHTML
+			// element (#1249)
 			if (isWebKit) {
-				baseline = elem.offsetHeight; // assigned to baseline for lint purpose
+				// Assigned to baseline for lint purpose
+				baseline = elem.offsetHeight;
 			}
 
 			// record current text transform
@@ -178,10 +197,13 @@ extend(SVGElement.prototype, /** @lends SVGElement.prototype */ {
 	 */
 	setSpanRotation: function (rotation, alignCorrection, baseline) {
 		var rotationStyle = {},
-			cssTransformKey = isMS ? '-ms-transform' : isWebKit ? '-webkit-transform' : isFirefox ? 'MozTransform' : win.opera ? '-o-transform' : '';
+			cssTransformKey = this.renderer.getTransformKey();
 
-		rotationStyle[cssTransformKey] = rotationStyle.transform = 'rotate(' + rotation + 'deg)';
-		rotationStyle[cssTransformKey + (isFirefox ? 'Origin' : '-origin')] = rotationStyle.transformOrigin = (alignCorrection * 100) + '% ' + baseline + 'px';
+		rotationStyle[cssTransformKey] = rotationStyle.transform =
+			'rotate(' + rotation + 'deg)';
+		rotationStyle[cssTransformKey + (isFirefox ? 'Origin' : '-origin')] =
+		rotationStyle.transformOrigin =
+			(alignCorrection * 100) + '% ' + baseline + 'px';
 		css(this.element, rotationStyle);
 	},
 
@@ -196,9 +218,22 @@ extend(SVGElement.prototype, /** @lends SVGElement.prototype */ {
 
 // Extend SvgRenderer for useHTML option.
 extend(SVGRenderer.prototype, /** @lends SVGRenderer.prototype */ {
+
+	getTransformKey: function () {
+		return isMS && !/Edge/.test(win.navigator.userAgent) ?
+			'-ms-transform' :
+			isWebKit ?
+				'-webkit-transform' :
+				isFirefox ?
+					'MozTransform' :
+					win.opera ?
+						'-o-transform' :
+						'';
+	},
+
 	/**
-	 * Create HTML text node. This is used by the VML renderer as well as the SVG
-	 * renderer through the useHTML option.
+	 * Create HTML text node. This is used by the VML renderer as well as the
+	 * SVG renderer through the useHTML option.
 	 *
 	 * @param {String} str
 	 * @param {Number} x
@@ -210,10 +245,15 @@ extend(SVGRenderer.prototype, /** @lends SVGRenderer.prototype */ {
 			renderer = wrapper.renderer,
 			isSVG = renderer.isSVG,
 			addSetters = function (element, style) {
-				// These properties are set as attributes on the SVG group, and as
-				// identical CSS properties on the div. (#3542)
+				// These properties are set as attributes on the SVG group, and
+				// as identical CSS properties on the div. (#3542)
 				each(['opacity', 'visibility'], function (prop) {
-					wrap(element, prop + 'Setter', function (proceed, value, key, elem) {
+					wrap(element, prop + 'Setter', function (
+						proceed,
+						value,
+						key,
+						elem
+					) {
 						proceed.call(this, value, key, elem);
 						style[key] = value;
 					});
@@ -225,7 +265,8 @@ extend(SVGRenderer.prototype, /** @lends SVGRenderer.prototype */ {
 			if (value !== element.innerHTML) {
 				delete this.bBox;
 			}
-			element.innerHTML = this.textStr = value;
+			this.textStr = value;
+			element.innerHTML = pick(value, '');
 			wrapper.htmlUpdateTransform();
 		};
 
@@ -235,9 +276,14 @@ extend(SVGRenderer.prototype, /** @lends SVGRenderer.prototype */ {
 		}
 
 		// Various setters which rely on update transform
-		wrapper.xSetter = wrapper.ySetter = wrapper.alignSetter = wrapper.rotationSetter = function (value, key) {
+		wrapper.xSetter =
+		wrapper.ySetter =
+		wrapper.alignSetter =
+		wrapper.rotationSetter =
+		function (value, key) {
 			if (key === 'align') {
-				key = 'textAlign'; // Do not overwrite the SVGElement.align method. Same as VML.
+				// Do not overwrite the SVGElement.align method. Same as VML.
+				key = 'textAlign';
 			}
 			wrapper[key] = value;
 			wrapper.htmlUpdateTransform();
@@ -280,7 +326,8 @@ extend(SVGRenderer.prototype, /** @lends SVGRenderer.prototype */ {
 					htmlGroup = svgGroupWrapper.div;
 					if (!htmlGroup) {
 
-						// Read the parent chain into an array and read from top down
+						// Read the parent chain into an array and read from top
+						// down
 						parentGroup = svgGroupWrapper;
 						while (parentGroup) {
 
@@ -290,46 +337,88 @@ extend(SVGRenderer.prototype, /** @lends SVGRenderer.prototype */ {
 							parentGroup = parentGroup.parentGroup;
 						}
 
-						// Ensure dynamically updating position when any parent is translated
+						// Ensure dynamically updating position when any parent
+						// is translated
 						each(parents.reverse(), function (parentGroup) {
 							var htmlGroupStyle,
 								cls = attr(parentGroup.element, 'class');
+
+							// Common translate setter for X and Y on the HTML
+							// group. Using CSS transform instead of left and
+							// right prevents flickering in IE and Edge when 
+							// moving tooltip (#6957).
+							function translateSetter(value, key) {
+								parentGroup[key] = value;
+
+								// In IE and Edge, use translate because items
+								// would flicker below a HTML tooltip (#6957)
+								if (isMS) {
+									htmlGroupStyle[renderer.getTransformKey()] =
+										'translate(' + (
+											parentGroup.x ||
+											parentGroup.translateX
+										) + 'px,' + (
+											parentGroup.y ||
+											parentGroup.translateY
+										) + 'px)';
+
+								// Otherwise, use left and top. Using translate
+								// doesn't work well with offline export (#7254,
+								// #7280)
+								} else {
+									if (key === 'translateX') {
+										htmlGroupStyle.left = value + 'px';
+									} else {
+										htmlGroupStyle.top = value + 'px';
+									}
+								}
+								
+								parentGroup.doTransform = true;
+							}
 
 							if (cls) {
 								cls = { className: cls };
 							} // else null
 
-							// Create a HTML div and append it to the parent div to emulate
-							// the SVG group structure
-							htmlGroup = parentGroup.div = parentGroup.div || createElement('div', cls, {
+							// Create a HTML div and append it to the parent div
+							// to emulate the SVG group structure
+							htmlGroup =
+							parentGroup.div =
+							parentGroup.div || createElement('div', cls, {
 								position: 'absolute',
 								left: (parentGroup.translateX || 0) + 'px',
 								top: (parentGroup.translateY || 0) + 'px',
 								display: parentGroup.display,
 								opacity: parentGroup.opacity, // #5075
-								pointerEvents: parentGroup.styles && parentGroup.styles.pointerEvents // #5595
-							}, htmlGroup || container); // the top group is appended to container
+								pointerEvents: (
+									parentGroup.styles &&
+									parentGroup.styles.pointerEvents
+								) // #5595
+
+							// the top group is appended to container
+							}, htmlGroup || container);
 
 							// Shortcut
 							htmlGroupStyle = htmlGroup.style;
 
-							// Set listeners to update the HTML div's position whenever the SVG group
-							// position is changed
+							// Set listeners to update the HTML div's position
+							// whenever the SVG group position is changed.
 							extend(parentGroup, {
+								classSetter: function (value) {
+									this.element.setAttribute('class', value);
+									htmlGroup.className = value;
+								},
 								on: function () {
-									wrapper.on.apply({ element: parents[0].div }, arguments);
+									if (parents[0].div) { // #6418
+										wrapper.on.apply(
+											{ element: parents[0].div },
+											arguments
+										);
+									}
 									return parentGroup;
 								},
-								translateXSetter: function (value, key) {
-									htmlGroupStyle.left = value + 'px';
-									parentGroup[key] = value;
-									parentGroup.doTransform = true;
-								},
-								translateYSetter: function (value, key) {
-									htmlGroupStyle.top = value + 'px';
-									parentGroup[key] = value;
-									parentGroup.doTransform = true;
-								}
+								translateXSetter: translateSetter,
+								translateYSetter: translateSetter
 							});
 							addSetters(parentGroup, htmlGroupStyle);
 						});

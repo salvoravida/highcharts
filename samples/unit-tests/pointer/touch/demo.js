@@ -53,3 +53,80 @@ QUnit.test('Single touch drag should not zoom (#5790)', function (assert) {
         'Zoom button not created'
     );
 });
+
+/* global TestController */
+QUnit.test('TouchPointer events', function (assert) {
+    var chart,
+        controller,
+        events,
+        pushEvent = function (type) {
+            events.push(type);
+        },
+        methods = [
+            'onContainerTouchStart',
+            'onContainerTouchMove',
+            'onDocumentTouchEnd',
+            'pinch',
+            'touch'
+        ],
+        backups = {};
+
+    // Allow the wrapped event handler to be registered
+    if (Highcharts.unbindDocumentTouchEnd) {
+        Highcharts.unbindDocumentTouchEnd = Highcharts.unbindDocumentTouchEnd();
+    }
+
+    // Listen to internal functions
+    methods.forEach(function (fn) {
+        backups[fn] = Highcharts.Pointer.prototype[fn];
+        Highcharts.wrap(Highcharts.Pointer.prototype, fn, function (proceed) {
+            pushEvent(fn);
+            proceed.apply(this, Array.prototype.slice.call(arguments, 1));
+        });
+    });
+    chart = Highcharts.chart('container', {
+        chart: {
+            width: 600,
+            height: 200
+        },
+        series: [{
+            data: [1]
+        }]
+    });
+    Highcharts.hoverChartIndex = chart.index;
+    controller = new TestController(chart);
+    events = [];
+
+    controller.tapOnElement(
+        chart.container,
+        chart.plotLeft + chart.series[0].points[0].plotX,
+        chart.plotTop + chart.series[0].points[0].plotY
+    );
+    if (
+        window.document.documentElement.ontouchstart !== undefined ||
+        window.PointerEvent ||
+        window.MSPointerEvent
+    ) {
+        assert.strictEqual(
+            events.join(','),
+            'onContainerTouchStart,touch,pinch,onDocumentTouchEnd',
+            'Tap on point 0.0: Correct order of events'
+        );
+    } else {
+        assert.strictEqual(
+            events.length,
+            0,
+            'This browser does not support touch.'
+        );
+    }
+
+    // Restore original functions
+    methods.forEach(function (fn) {
+        Highcharts.Pointer.prototype[fn] = backups[fn];
+    });
+
+    // Allow the original event handler to be re-registered
+    if (Highcharts.unbindDocumentTouchEnd) {
+        Highcharts.unbindDocumentTouchEnd = Highcharts.unbindDocumentTouchEnd();
+    }
+});

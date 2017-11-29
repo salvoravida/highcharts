@@ -34,3 +34,65 @@ QUnit.test('Spacing and legend overflow (#6497)', function (assert) {
         'Legend is within spacing'
     );
 });
+
+QUnit.test('Hidden legend bogus SVG (#6769', function (assert) {
+
+    var chart = Highcharts.chart('container', {
+        credits: {
+            enabled: false
+        },
+        title: {
+            text: ''
+        },
+        yAxis: {
+            visible: false
+        },
+        xAxis: {
+            visible: false
+        },
+        series: [{
+            data: [1],
+            visible: false
+        }]
+    });
+
+    assert.strictEqual(
+        chart.container.innerHTML.indexOf('stroke-width="#'),
+        -1,
+        'No bogus stroke-width found'
+    );
+
+});
+
+QUnit.test('Legend resize', function (assert) {
+    var chart = Highcharts.chart('container', {
+        chart: {
+            width: 600,
+            animation: {
+                duration: 1
+            }
+        },
+        legend: {
+            borderWidth: 2
+        },
+        series: [{
+            data: [1, 3, 2, 4]
+        }]
+    });
+    var done = assert.async();
+
+    var legendWidth = chart.legend.box.getBBox().width;
+
+    chart.addSeries({
+        data: [2, 4, 3, 5]
+    });
+
+    setTimeout(function () {
+        assert.notEqual(
+            chart.legend.box.getBBox().width,
+            legendWidth,
+            'Legend width has changed (#7260)'
+        );
+        done();
+    }, 50);
+});

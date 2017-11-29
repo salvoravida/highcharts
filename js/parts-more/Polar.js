@@ -69,7 +69,7 @@ seriesProto.getConnectors = function (segment, index, calculateNeighbours, conne
 		leftContY,
 		rightContX,
 		rightContY,
-		dLControlPoint, //distance left control point
+		dLControlPoint, // distance left control point
 		dRControlPoint,
 		leftContAngle,
 		rightContAngle,
@@ -268,6 +268,19 @@ wrap(seriesProto, 'getGraphPath', function (proceed, points) {
 				break;
 			}
 		}
+
+
+		/**
+		 * Polar charts only. Whether to connect the ends of a line series plot
+		 * across the extremes.
+		 * 
+		 * @type {Boolean}
+		 * @sample {highcharts} highcharts/plotoptions/line-connectends-false/
+		 *         Do not connect
+		 * @since 2.3.0
+		 * @product highcharts
+		 * @apioption plotOptions.series.connectEnds
+		 */
 		if (this.options.connectEnds !== false && firstValid !== undefined) {
 			this.connectEnds = true; // re-used in splines
 			points.splice(points.length, 0, points[firstValid]);
@@ -329,7 +342,6 @@ function polarAnimate(proceed, init) {
 
 				group.attr(attribs);
 				if (markerGroup) {
-					//markerGroup.attrSetters = group.attrSetters;
 					markerGroup.attr(attribs);
 				}
 

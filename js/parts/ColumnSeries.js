@@ -28,57 +28,353 @@ var animObject = H.animObject,
  * @constructor seriesTypes.column
  * @augments Series
  */
+
+/**
+ * Column series display one column per value along an X axis.
+ *
+ * @sample {highcharts} highcharts/demo/column-basic/ Column chart
+ * @sample {highstock} stock/demo/column/ Column chart
+ *
+ * @extends {plotOptions.line}
+ * @product highcharts highstock
+ * @excluding connectNulls,dashStyle,gapSize,gapUnit,linecap,lineWidth,marker,
+ *          connectEnds,step
+ * @optionparent plotOptions.column
+ */
 seriesType('column', 'line', {
+
+	/**
+	 * The corner radius of the border surrounding each column or bar.
+	 *
+	 * @type {Number}
+	 * @sample {highcharts} highcharts/plotoptions/column-borderradius/
+	 *         Rounded columns
+	 * @default 0
+	 * @product highcharts highstock
+	 */
 	borderRadius: 0,
-	//colorByPoint: undefined,
+
+	/**
+	 * The width of the border surrounding each column or bar.
+	 *
+	 * In styled mode, the stroke width can be set with the `.highcharts-point`
+	 * rule.
+	 *
+	 * @type {Number}
+	 * @sample {highcharts} highcharts/plotoptions/column-borderwidth/
+	 *         2px black border
+	 * @default 1
+	 * @product highcharts highstock
+	 * @apioption plotOptions.column.borderWidth
+	 */
+
+	/**
+	 * When using automatic point colors pulled from the `options.colors`
+	 * collection, this option determines whether the chart should receive
+	 * one color per series or one color per point.
+	 *
+	 * @type {Boolean}
+	 * @see [series colors](#plotOptions.column.colors)
+	 * @sample {highcharts} highcharts/plotoptions/column-colorbypoint-false/
+	 *         False by default
+	 * @sample {highcharts} highcharts/plotoptions/column-colorbypoint-true/
+	 *         True
+	 * @default false
+	 * @since 2.0
+	 * @product highcharts highstock
+	 * @apioption plotOptions.column.colorByPoint
+	 */
+
+	/**
+	 * A series specific or series type specific color set to apply instead
+	 * of the global [colors](#colors) when [colorByPoint](#plotOptions.
+	 * column.colorByPoint) is true.
+	 *
+	 * @type {Array<Color>}
+	 * @since 3.0
+	 * @product highcharts highstock
+	 * @apioption plotOptions.column.colors
+	 */
+
+	/**
+	 * When true, each column edge is rounded to its nearest pixel in order
+	 * to render sharp on screen. In some cases, when there are a lot of
+	 * densely packed columns, this leads to visible difference in column
+	 * widths or distance between columns. In these cases, setting `crisp`
+	 * to `false` may look better, even though each column is rendered
+	 * blurry.
+	 *
+	 * @type {Boolean}
+	 * @sample {highcharts} highcharts/plotoptions/column-crisp-false/
+	 *         Crisp is false
+	 * @default true
+	 * @since 5.0.10
+	 * @product highcharts highstock
+	 */
 	crisp: true,
+
+	/**
+	 * Padding between each value groups, in x axis units.
+	 *
+	 * @type {Number}
+	 * @sample {highcharts} highcharts/plotoptions/column-grouppadding-default/
+	 *         0.2 by default
+	 * @sample {highcharts} highcharts/plotoptions/column-grouppadding-none/
+	 *         No group padding - all columns are evenly spaced
+	 * @default 0.2
+	 * @product highcharts highstock
+	 */
 	groupPadding: 0.2,
-	//grouping: true,
+
+	/**
+	 * Whether to group non-stacked columns or to let them render independent
+	 * of each other. Non-grouped columns will be laid out individually
+	 * and overlap each other.
+	 *
+	 * @type {Boolean}
+	 * @sample {highcharts} highcharts/plotoptions/column-grouping-false/
+	 *         Grouping disabled
+	 * @sample {highstock} highcharts/plotoptions/column-grouping-false/
+	 *         Grouping disabled
+	 * @default true
+	 * @since 2.3.0
+	 * @product highcharts highstock
+	 * @apioption plotOptions.column.grouping
+	 */
+
 	marker: null, // point options are specified in the base options
+
+	/**
+	 * The maximum allowed pixel width for a column, translated to the height
+	 * of a bar in a bar chart. This prevents the columns from becoming
+	 * too wide when there is a small number of points in the chart.
+	 *
+	 * @type {Number}
+	 * @see [pointWidth](#plotOptions.column.pointWidth)
+	 * @sample {highcharts} highcharts/plotoptions/column-maxpointwidth-20/
+	 *         Limited to 50
+	 * @sample {highstock} highcharts/plotoptions/column-maxpointwidth-20/
+	 *         Limited to 50
+	 * @default null
+	 * @since 4.1.8
+	 * @product highcharts highstock
+	 * @apioption plotOptions.column.maxPointWidth
+	 */
+
+	/**
+	 * Padding between each column or bar, in x axis units.
+	 *
+	 * @type {Number}
+	 * @sample {highcharts} highcharts/plotoptions/column-pointpadding-default/
+	 *         0.1 by default
+	 * @sample {highcharts} highcharts/plotoptions/column-pointpadding-025/
+	 *         0.25
+	 * @sample {highcharts} highcharts/plotoptions/column-pointpadding-none/
+	 *         0 for tightly packed columns
+	 * @default 0.1
+	 * @product highcharts highstock
+	 */
 	pointPadding: 0.1,
-	//pointWidth: null,
+
+	/**
+	 * A pixel value specifying a fixed width for each column or bar. When
+	 * `null`, the width is calculated from the `pointPadding` and
+	 * `groupPadding`.
+	 *
+	 * @type {Number}
+	 * @see [maxPointWidth](#plotOptions.column.maxPointWidth)
+	 * @sample {highcharts} highcharts/plotoptions/column-pointwidth-20/
+	 *         20px wide columns regardless of chart width or the amount of data
+	 *         points
+	 * @default null
+	 * @since 1.2.5
+	 * @product highcharts highstock
+	 * @apioption plotOptions.column.pointWidth
+	 */
+
+	/**
+	 * The minimal height for a column or width for a bar. By default,
+	 * 0 values are not shown. To visualize a 0 (or close to zero) point,
+	 * set the minimal point length to a pixel value like 3\. In stacked
+	 * column charts, minPointLength might not be respected for tightly
+	 * packed values.
+	 *
+	 * @type {Number}
+	 * @sample {highcharts} highcharts/plotoptions/column-minpointlength/
+	 *         Zero base value
+	 * @sample {highcharts} highcharts/plotoptions/column-minpointlength-pos-and-neg/
+	 *         Positive and negative close to zero values
+	 * @default 0
+	 * @product highcharts highstock
+	 */
 	minPointLength: 0,
-	cropThreshold: 50, // when there are more points, they will not animate out of the chart on xAxis.setExtremes
-	pointRange: null, // null means auto, meaning 1 in a categorized axis and least distance between points if not categories
+
+	/**
+	 * When the series contains less points than the crop threshold, all
+	 * points are drawn, event if the points fall outside the visible plot
+	 * area at the current zoom. The advantage of drawing all points (including
+	 * markers and columns), is that animation is performed on updates.
+	 * On the other hand, when the series contains more points than the
+	 * crop threshold, the series data is cropped to only contain points
+	 * that fall within the plot area. The advantage of cropping away invisible
+	 * points is to increase performance on large series. .
+	 *
+	 * @type {Number}
+	 * @default 50
+	 * @product highcharts highstock
+	 */
+	cropThreshold: 50,
+
+	/**
+	 * The X axis range that each point is valid for. This determines the
+	 * width of the column. On a categorized axis, the range will be 1
+	 * by default (one category unit). On linear and datetime axes, the
+	 * range will be computed as the distance between the two closest data
+	 * points.
+	 *
+	 * The default `null` means it is computed automatically, but this option
+	 * can be used to override the automatic value.
+	 *
+	 * @type {Number}
+	 * @sample {highcharts} highcharts/plotoptions/column-pointrange/
+	 *         Set the point range to one day on a data set with one week
+	 *         between the points
+	 * @default null
+	 * @since 2.3
+	 * @product highcharts highstock
+	 */
+	pointRange: null,
+
 	states: {
+
+		/**
+		 * @extends plotOptions.series.states.hover
+		 * @excluding halo,lineWidth,lineWidthPlus,marker
+		 * @product highcharts highstock
+		 */
 		hover: {
+
+			/**
+			 * @ignore-option
+			 */
 			halo: false,
+			/**
+			 * A specific border color for the hovered point. Defaults to
+			 * inherit the normal state border color.
+			 *
+			 * @type {Color}
+			 * @product highcharts
+			 * @apioption plotOptions.column.states.hover.borderColor
+			 */
+
+			/**
+			 * A specific color for the hovered point.
+			 *
+			 * @type {Color}
+			 * @default undefined
+			 * @product highcharts
+			 * @apioption plotOptions.column.states.hover.color
+			 */
+
 			/*= if (build.classic) { =*/
-			brightness: 0.1,
-			shadow: false
+
+			/**
+			 * How much to brighten the point on interaction. Requires the main
+			 * color to be defined in hex or rgb(a) format.
+			 *
+			 * In styled mode, the hover brightening is by default replaced
+			 * with a fill-opacity set in the `.highcharts-point:hover` rule.
+			 *
+			 * @type {Number}
+			 * @sample {highcharts} highcharts/plotoptions/column-states-hover-brightness/
+			 *         Brighten by 0.5
+			 * @default 0.1
+			 * @product highcharts highstock
+			 */
+			brightness: 0.1
+
 			/*= } =*/
 		},
 		/*= if (build.classic) { =*/
+
 		select: {
 			color: '${palette.neutralColor20}',
-			borderColor: '${palette.neutralColor100}',
-			shadow: false
+			borderColor: '${palette.neutralColor100}'
 		}
 		/*= } =*/
 	},
+
 	dataLabels: {
 		align: null, // auto
 		verticalAlign: null, // auto
 		y: null
 	},
+
+	/**
+	 * When this is true, the series will not cause the Y axis to cross
+	 * the zero plane (or [threshold](#plotOptions.series.threshold) option)
+	 * unless the data actually crosses the plane.
+	 *
+	 * For example, if `softThreshold` is `false`, a series of 0, 1, 2,
+	 * 3 will make the Y axis show negative values according to the `minPadding`
+	 * option. If `softThreshold` is `true`, the Y axis starts at 0.
+	 *
+	 * @type {Boolean}
+	 * @default {highcharts} true
+	 * @default {highstock} false
+	 * @since 4.1.9
+	 * @product highcharts highstock
+	 */
 	softThreshold: false,
-	startFromThreshold: true, // false doesn't work well: http://jsfiddle.net/highcharts/hz8fopan/14/
+
+	// false doesn't work well: http://jsfiddle.net/highcharts/hz8fopan/14/
+	/**	@ignore */
+	startFromThreshold: true,
+
 	stickyTracking: false,
+
 	tooltip: {
 		distance: 6
 	},
+
+	/**
+	 * The Y axis value to serve as the base for the columns, for distinguishing
+	 * between values above and below a threshold. If `null`, the columns
+	 * extend from the padding Y axis minimum.
+	 *
+	 * @type {Number}
+	 * @default 0
+	 * @since 2.0
+	 * @product highcharts
+	 */
 	threshold: 0,
 	/*= if (build.classic) { =*/
+
+	/**
+	 * The color of the border surrounding each column or bar.
+	 *
+	 * In styled mode, the border stroke can be set with the `.highcharts-point`
+	 * rule.
+	 *
+	 * @type {Color}
+	 * @sample {highcharts} highcharts/plotoptions/column-bordercolor/
+	 *         Dark gray border
+	 * @default #ffffff
+	 * @product highcharts highstock
+	 */
 	borderColor: '${palette.backgroundColor}'
 	// borderWidth: 1
 	/*= } =*/
 
 }, /** @lends seriesTypes.column.prototype */ {
 	cropShoulder: 0,
-	directTouch: true, // When tooltip is not shared, this series (and derivatives) requires direct touch/hover. KD-tree does not apply.
+	// When tooltip is not shared, this series (and derivatives) requires direct
+	// touch/hover. KD-tree does not apply.
+	directTouch: true,
 	trackerGroups: ['group', 'dataLabelsGroup'],
-	negStacks: true, // use separate negative stacks, unlike area stacks where a negative
-		// point is substracted from previous (#1910)
+	// use separate negative stacks, unlike area stacks where a negative point
+	// is substracted from previous (#1910)
+	negStacks: true,
 
 	/**
 	 * Initialize the series. Extends the basic Series.init method by
@@ -86,7 +382,7 @@ seriesType('column', 'line', {
 	 *
 	 * @function #init
 	 * @memberOf seriesTypes.column
-	 * @returns {void}
+	 *
 	 */
 	init: function () {
 		Series.prototype.init.apply(this, arguments);
@@ -106,8 +402,8 @@ seriesType('column', 'line', {
 	},
 
 	/**
-	 * Return the width and x offset of the columns adjusted for grouping, groupPadding, pointPadding,
-	 * pointWidth etc.
+	 * Return the width and x offset of the columns adjusted for grouping,
+	 * groupPadding, pointPadding, pointWidth etc.
 	 */
 	getColumnMetrics: function () {
 
@@ -120,9 +416,9 @@ seriesType('column', 'line', {
 			stackGroups = {},
 			columnCount = 0;
 
-		// Get the total number of column type series.
-		// This is called on every series. Consider moving this logic to a
-		// chart.orderStacks() function and call it on init, addSeries and removeSeries
+		// Get the total number of column type series. This is called on every
+		// series. Consider moving this logic to a chart.orderStacks() function
+		// and call it on init, addSeries and removeSeries
 		if (options.grouping === false) {
 			columnCount = 1;
 		} else {
@@ -130,8 +426,15 @@ seriesType('column', 'line', {
 				var otherOptions = otherSeries.options,
 					otherYAxis = otherSeries.yAxis,
 					columnIndex;
-				if (otherSeries.type === series.type && otherSeries.visible &&
-						yAxis.len === otherYAxis.len && yAxis.pos === otherYAxis.pos) {  // #642, #2086
+				if (
+					otherSeries.type === series.type &&
+					(
+						otherSeries.visible ||
+						!series.chart.options.chart.ignoreHiddenSeries
+					) &&
+					yAxis.len === otherYAxis.len &&
+					yAxis.pos === otherYAxis.pos
+				) {  // #642, #2086
 					if (otherOptions.stacking) {
 						stackKey = otherSeries.stackKey;
 						if (stackGroups[stackKey] === undefined) {
@@ -147,7 +450,13 @@ seriesType('column', 'line', {
 		}
 
 		var categoryWidth = Math.min(
-				Math.abs(xAxis.transA) * (xAxis.ordinalSlope || options.pointRange || xAxis.closestPointRange || xAxis.tickInterval || 1), // #2610
+				Math.abs(xAxis.transA) * (
+					xAxis.ordinalSlope ||
+					options.pointRange ||
+					xAxis.closestPointRange ||
+					xAxis.tickInterval ||
+					1
+				), // #2610
 				xAxis.len // #1535
 			),
 			groupPadding = categoryWidth * options.groupPadding,
@@ -155,13 +464,21 @@ seriesType('column', 'line', {
 			pointOffsetWidth = groupWidth / (columnCount || 1),
 			pointWidth = Math.min(
 				options.maxPointWidth || xAxis.len,
-				pick(options.pointWidth, pointOffsetWidth * (1 - 2 * options.pointPadding))
+				pick(
+					options.pointWidth,
+					pointOffsetWidth * (1 - 2 * options.pointPadding)
+				)
 			),
 			pointPadding = (pointOffsetWidth - pointWidth) / 2,
-			colIndex = (series.columnIndex || 0) + (reversedXAxis ? 1 : 0), // #1251, #3737
-			pointXOffset = pointPadding + (groupPadding + colIndex *
-				pointOffsetWidth - (categoryWidth / 2)) *
-				(reversedXAxis ? -1 : 1);
+			// #1251, #3737
+			colIndex = (series.columnIndex || 0) + (reversedXAxis ? 1 : 0),
+			pointXOffset =
+				pointPadding +
+				(
+					groupPadding +
+					colIndex * pointOffsetWidth -
+					(categoryWidth / 2)
+				) *	(reversedXAxis ? -1 : 1);
 
 		// Save it for reading in linked series (Error bars particularly)
 		series.columnMetrics = {
@@ -188,8 +505,8 @@ seriesType('column', 'line', {
 			yCrisp += 1;
 		}
 
-		// Horizontal. We need to first compute the exact right edge, then round it
-		// and compute the width from there.
+		// Horizontal. We need to first compute the exact right edge, then round
+		// it and compute the width from there.
 		if (this.options.crisp) {
 			right = Math.round(x + w) + xCrisp;
 			x = Math.round(x) + xCrisp;
@@ -217,33 +534,38 @@ seriesType('column', 'line', {
 	},
 
 	/**
-	 * Translate each point to the plot area coordinate system and find shape positions
+	 * Translate each point to the plot area coordinate system and find shape
+	 * positions
 	 */
 	translate: function () {
 		var series = this,
 			chart = series.chart,
 			options = series.options,
-			dense = series.dense = series.closestPointRange * series.xAxis.transA < 2,
+			dense = series.dense =
+				series.closestPointRange * series.xAxis.transA < 2,
 			borderWidth = series.borderWidth = pick(
-				options.borderWidth, 
+				options.borderWidth,
 				dense ? 0 : 1  // #3635
 			),
 			yAxis = series.yAxis,
 			threshold = options.threshold,
-			translatedThreshold = series.translatedThreshold = yAxis.getThreshold(threshold),
+			translatedThreshold = series.translatedThreshold =
+				yAxis.getThreshold(threshold),
 			minPointLength = pick(options.minPointLength, 5),
 			metrics = series.getColumnMetrics(),
 			pointWidth = metrics.width,
-			seriesBarW = series.barW = Math.max(pointWidth, 1 + 2 * borderWidth), // postprocessed for border width
+			// postprocessed for border width
+			seriesBarW = series.barW =
+				Math.max(pointWidth, 1 + 2 * borderWidth),
 			pointXOffset = series.pointXOffset = metrics.offset;
 
 		if (chart.inverted) {
 			translatedThreshold -= 0.5; // #3355
 		}
 
-		// When the pointPadding is 0, we want the columns to be packed tightly, so we allow individual
-		// columns to have individual sizes. When pointPadding is greater, we strive for equal-width
-		// columns (#2694).
+		// When the pointPadding is 0, we want the columns to be packed tightly,
+		// so we allow individual columns to have individual sizes. When
+		// pointPadding is greater, we strive for equal-width columns (#2694).
 		if (options.pointPadding) {
 			seriesBarW = Math.ceil(seriesBarW);
 		}
@@ -254,7 +576,10 @@ seriesType('column', 'line', {
 		each(series.points, function (point) {
 			var yBottom = pick(point.yBottom, translatedThreshold),
 				safeDistance = 999 + Math.abs(yBottom),
-				plotY = Math.min(Math.max(-safeDistance, point.plotY), yAxis.len + safeDistance), // Don't draw too far outside plot area (#1303, #2241, #4264)
+				plotY = Math.min(
+					Math.max(-safeDistance, point.plotY),
+					yAxis.len + safeDistance
+				), // Don't draw too far outside plot area (#1303, #2241, #4264)
 				barX = point.plotX + pointXOffset,
 				barW = seriesBarW,
 				barY = Math.min(plotY, yBottom),
@@ -262,14 +587,27 @@ seriesType('column', 'line', {
 				barH = Math.max(plotY, yBottom) - barY;
 
 			// Handle options.minPointLength
-			if (Math.abs(barH) < minPointLength) {
-				if (minPointLength) {
-					barH = minPointLength;
-					up = (!yAxis.reversed && !point.negative) || (yAxis.reversed && point.negative);
-					barY = Math.abs(barY - translatedThreshold) > minPointLength ? // stacked
-							yBottom - minPointLength : // keep position
-							translatedThreshold - (up ? minPointLength : 0); // #1485, #4051
+			if (minPointLength && Math.abs(barH) < minPointLength) {
+				barH = minPointLength;
+				up = (!yAxis.reversed && !point.negative) ||
+					(yAxis.reversed && point.negative);
+
+				// Reverse zeros if there's no positive value in the series
+				// in visible range (#7046)
+				if (
+					point.y === threshold &&
+					series.dataMax <= threshold &&
+					yAxis.min < threshold // and if there's room for it (#7311)
+				) {
+					up = !up;
 				}
+
+				// If stacked...
+				barY = Math.abs(barY - translatedThreshold) > minPointLength ?
+						// ...keep position
+						yBottom - minPointLength :
+						// #1485, #4051
+						translatedThreshold - (up ? minPointLength : 0);
 			}
 
 			// Cache for access in polar
@@ -278,15 +616,21 @@ seriesType('column', 'line', {
 
 			// Fix the tooltip on center of grouped columns (#1216, #424, #3648)
 			point.tooltipPos = chart.inverted ?
-				[yAxis.len + yAxis.pos - chart.plotLeft - plotY, series.xAxis.len - barX - barW / 2, barH] :
-				[barX + barW / 2, plotY + yAxis.pos - chart.plotTop, barH];
+			[
+				yAxis.len + yAxis.pos - chart.plotLeft - plotY,
+				series.xAxis.len - barX - barW / 2, barH
+			] :
+			[barX + barW / 2, plotY + yAxis.pos - chart.plotTop, barH];
 
 			// Register shape type and arguments to be used in drawPoints
 			point.shapeType = 'rect';
 			point.shapeArgs = series.crispCol.apply(
 				series,
-				point.isNull ? 
-					[point.plotX, yAxis.len / 2, 0, 0] : // #3169, drilldown from null must have a position to work from
+				point.isNull ?
+					// #3169, drilldown from null must have a position to work
+					// from #6585, dataLabel should be placed on xAxis, not
+					// floating in the middle of the chart
+					[barX, translatedThreshold, barW, 0] :
 					[barX, barY, barW, barH]
 			);
 		});
@@ -305,7 +649,9 @@ seriesType('column', 'line', {
 	 * Columns have no graph
 	 */
 	drawGraph: function () {
-		this.group[this.dense ? 'addClass' : 'removeClass']('highcharts-dense-data');
+		this.group[
+			this.dense ? 'addClass' : 'removeClass'
+		]('highcharts-dense-data');
 	},
 
 	/*= if (build.classic) { =*/
@@ -320,29 +666,35 @@ seriesType('column', 'line', {
 			strokeOption = p2o.stroke || 'borderColor',
 			strokeWidthOption = p2o['stroke-width'] || 'borderWidth',
 			fill = (point && point.color) || this.color,
-			stroke = point[strokeOption] || options[strokeOption] ||
+			stroke = (point && point[strokeOption]) || options[strokeOption] ||
 				this.color || fill, // set to fill when borderColor null
-			strokeWidth = point[strokeWidthOption] || 
+			strokeWidth = (point && point[strokeWidthOption]) ||
 				options[strokeWidthOption] || this[strokeWidthOption] || 0,
 			dashstyle = options.dashStyle,
 			zone,
 			brightness;
-		
+
 		// Handle zone colors
 		if (point && this.zones.length) {
 			zone = point.getZone();
-			fill = point.options.color || (zone && zone.color) || this.color; // When zones are present, don't use point.color (#4267). Changed order (#6527)
+			// When zones are present, don't use point.color (#4267). Changed
+			// order (#6527)
+			fill = point.options.color || (zone && zone.color) || this.color;
 		}
 
 		// Select or hover states
 		if (state) {
 			stateOptions = merge(
 				options.states[state],
-				point.options.states && point.options.states[state] || {} // #6401
+				// #6401
+				point.options.states && point.options.states[state] || {}
 			);
 			brightness = stateOptions.brightness;
-			fill = stateOptions.color || 
-				(brightness !== undefined && color(fill).brighten(stateOptions.brightness).get()) ||
+			fill = stateOptions.color ||
+				(
+					brightness !== undefined &&
+					color(fill).brighten(stateOptions.brightness).get()
+				) ||
 				fill;
 			stroke = stateOptions[strokeOption] || stroke;
 			strokeWidth = stateOptions[strokeWidthOption] || strokeWidth;
@@ -354,9 +706,6 @@ seriesType('column', 'line', {
 			'stroke': stroke,
 			'stroke-width': strokeWidth
 		};
-		if (options.borderRadius) {
-			ret.r = options.borderRadius;
-		}
 
 		if (dashstyle) {
 			ret.dashstyle = dashstyle;
@@ -367,9 +716,9 @@ seriesType('column', 'line', {
 	/*= } =*/
 
 	/**
-	 * Draw the columns. For bars, the series.group is rotated, so the same coordinates
-	 * apply for columns and bars. This method is inherited by scatter series.
-	 *
+	 * Draw the columns. For bars, the series.group is rotated, so the same
+	 * coordinates apply for columns and bars. This method is inherited by
+	 * scatter series.
 	 */
 	drawPoints: function () {
 		var series = this,
@@ -388,24 +737,41 @@ seriesType('column', 'line', {
 				shapeArgs = point.shapeArgs;
 
 				if (graphic) { // update
-					graphic[chart.pointCount < animationLimit ? 'animate' : 'attr'](
+					graphic[
+						chart.pointCount < animationLimit ? 'animate' : 'attr'
+					](
 						merge(shapeArgs)
 					);
 
 				} else {
-					point.graphic = graphic = renderer[point.shapeType](shapeArgs)
-						.add(point.group || series.group);
+					point.graphic = graphic =
+						renderer[point.shapeType](shapeArgs)
+							.add(point.group || series.group);
+				}
+
+				// Border radius is not stylable (#6900)
+				if (options.borderRadius) {
+					graphic.attr({
+						r: options.borderRadius
+					});
 				}
 
 				/*= if (build.classic) { =*/
 				// Presentational
 				graphic
-					.attr(series.pointAttribs(point, point.selected && 'select'))
-					.shadow(options.shadow, null, options.stacking && !options.borderRadius);
+					.attr(series.pointAttribs(
+						point,
+						point.selected && 'select'
+					))
+					.shadow(
+						options.shadow,
+						null,
+						options.stacking && !options.borderRadius
+					);
 				/*= } =*/
-				
+
 				graphic.addClass(point.getClassName(), true);
-						
+
 
 			} else if (graphic) {
 				point.graphic = graphic.destroy(); // #1269
@@ -423,12 +789,17 @@ seriesType('column', 'line', {
 			options = series.options,
 			inverted = this.chart.inverted,
 			attr = {},
+			translateProp = inverted ? 'translateX' : 'translateY',
+			translateStart,
 			translatedThreshold;
 
 		if (svg) { // VML is too slow anyway
 			if (init) {
 				attr.scaleY = 0.001;
-				translatedThreshold = Math.min(yAxis.pos + yAxis.len, Math.max(yAxis.pos, yAxis.toPixels(options.threshold)));
+				translatedThreshold = Math.min(
+					yAxis.pos + yAxis.len,
+					Math.max(yAxis.pos, yAxis.toPixels(options.threshold))
+				);
 				if (inverted) {
 					attr.translateX = translatedThreshold - yAxis.len;
 				} else {
@@ -437,14 +808,19 @@ seriesType('column', 'line', {
 				series.group.attr(attr);
 
 			} else { // run the animation
-
-				attr[inverted ? 'translateX' : 'translateY'] = yAxis.pos;
-				series.group.animate(attr, extend(animObject(series.options.animation), {
-					// Do the scale synchronously to ensure smooth updating (#5030)
+				translateStart = series.group.attr(translateProp);
+				series.group.animate(
+					{ scaleY: 1 },
+					extend(animObject(series.options.animation
+				), {
+					// Do the scale synchronously to ensure smooth updating
+					// (#5030, #7228)
 					step: function (val, fx) {
-						series.group.attr({
-							scaleY: Math.max(0.001, fx.pos) // #5250
-						});
+
+						attr[translateProp] =
+							translateStart +
+							fx.pos * (yAxis.pos - translateStart);
+						series.group.attr(attr);
 					}
 				}));
 
@@ -474,3 +850,82 @@ seriesType('column', 'line', {
 		Series.prototype.remove.apply(series, arguments);
 	}
 });
+
+
+/**
+ * A `column` series. If the [type](#series.column.type) option is
+ * not specified, it is inherited from [chart.type](#chart.type).
+ *
+ * For options that apply to multiple series, it is recommended to add
+ * them to the [plotOptions.series](#plotOptions.series) options structure.
+ * To apply to all series of this specific type, apply it to [plotOptions.
+ * column](#plotOptions.column).
+ *
+ * @type {Object}
+ * @extends series,plotOptions.column
+ * @excluding dataParser,dataURL,marker
+ * @product highcharts highstock
+ * @apioption series.column
+ */
+
+/**
+ * An array of data points for the series. For the `column` series type,
+ * points can be given in the following ways:
+ *
+ * 1.  An array of numerical values. In this case, the numerical values
+ * will be interpreted as `y` options. The `x` values will be automatically
+ * calculated, either starting at 0 and incremented by 1, or from `pointStart`
+ * and `pointInterval` given in the series options. If the axis has
+ * categories, these will be used. Example:
+ *
+ *  ```js
+ *  data: [0, 5, 3, 5]
+ *  ```
+ *
+ * 2.  An array of arrays with 2 values. In this case, the values correspond
+ * to `x,y`. If the first value is a string, it is applied as the name
+ * of the point, and the `x` value is inferred.
+ *
+ *  ```js
+ *     data: [
+ *         [0, 6],
+ *         [1, 2],
+ *         [2, 6]
+ *     ]
+ *  ```
+ *
+ * 3.  An array of objects with named values. The objects are point
+ * configuration objects as seen below. If the total number of data
+ * points exceeds the series' [turboThreshold](#series.column.turboThreshold),
+ * this option is not available.
+ *
+ *  ```js
+ *     data: [{
+ *         x: 1,
+ *         y: 9,
+ *         name: "Point2",
+ *         color: "#00FF00"
+ *     }, {
+ *         x: 1,
+ *         y: 6,
+ *         name: "Point1",
+ *         color: "#FF00FF"
+ *     }]
+ *  ```
+ *
+ * @type {Array<Object|Array|Number>}
+ * @extends series.line.data
+ * @excluding marker
+ * @sample {highcharts} highcharts/chart/reflow-true/ Numerical values
+ * @sample {highcharts} highcharts/series/data-array-of-arrays/
+ *         Arrays of numeric x and y
+ * @sample {highcharts} highcharts/series/data-array-of-arrays-datetime/
+ *         Arrays of datetime x and y
+ * @sample {highcharts} highcharts/series/data-array-of-name-value/
+ *         Arrays of point.name and y
+ * @sample {highcharts} highcharts/series/data-array-of-objects/
+ *         Config objects
+ * @product highcharts highstock
+ * @apioption series.column.data
+ */
+

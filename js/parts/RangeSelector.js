@@ -33,11 +33,52 @@ var addEvent = H.addEvent,
  * Start Range Selector code												  *
  *****************************************************************************/
 extend(defaultOptions, {
+
+	/**
+	 * The range selector is a tool for selecting ranges to display within
+	 * the chart. It provides buttons to select preconfigured ranges in
+	 * the chart, like 1 day, 1 week, 1 month etc. It also provides input
+	 * boxes where min and max dates can be manually input.
+	 *
+	 * @product highstock
+	 * @optionparent rangeSelector
+	 */
 	rangeSelector: {
 		// allButtonsEnabled: false,
 		// enabled: true,
 		// buttons: {Object}
 		// buttonSpacing: 0,
+
+		/**
+		 * The vertical alignment of the rangeselector box. Allowed properties are `top`,
+		 * `middle`, `bottom`.
+		 *
+		 * @since 6.0.0
+		 *
+		 * @sample {highstock} stock/rangeselector/vertical-align-middle/ Middle
+		 *
+		 * @sample {highstock} stock/rangeselector/vertical-align-bottom/ Bottom
+		 */
+		verticalAlign: 'top',
+
+		/**
+		 * A collection of attributes for the buttons. The object takes SVG
+		 * attributes like `fill`, `stroke`, `stroke-width`, as well as `style`,
+		 * a collection of CSS properties for the text.
+		 * 
+		 * The object can also be extended with states, so you can set presentational
+		 * options for `hover`, `select` or `disabled` button states.
+		 * 
+		 * CSS styles for the text label.
+		 * 
+		 * In styled mode, the buttons are styled by the `.highcharts-
+		 * range-selector-buttons .highcharts-button` rule with its different
+		 * states.
+		 * 
+		 * @type {Object}
+		 * @sample {highstock} stock/rangeselector/styling/ Styling the buttons and inputs
+		 * @product highstock
+		 */
 		buttonTheme: {
 			'stroke-width': 0,
 			width: 28,
@@ -45,9 +86,97 @@ extend(defaultOptions, {
 			padding: 2,
 			zIndex: 7 // #484, #852
 		},
-		height: 35, // reserved space for buttons and input
+		
+		/**
+		 * When the rangeselector is floating, the plot area does not reserve 
+		 * space for it. This opens for positioning anywhere on the chart.
+		 * 
+		 * @sample {highstock} stock/rangeselector/floating/
+		 *         Placing the range selector between the plot area and the
+		 *         navigator
+		 * @since 6.0.0
+		 * @product highstock
+		 */
+		floating: false,
+		
+		/**
+		 * The x offset of the range selector relative to its horizontal
+		 * alignment within `chart.spacingLeft` and `chart.spacingRight`.
+		 * 
+		 * @since 6.0.0
+		 * @product highstock
+		 */
+		x: 0,
+
+		/**
+		 * The y offset of the range selector relative to its horizontal
+		 * alignment within `chart.spacingLeft` and `chart.spacingRight`.
+		 * 
+		 * @since 6.0.0
+		 * @product highstock
+		 */
+		y: 0,
+
+		/**
+		 * Deprecated. The height of the range selector. Currently it is
+		 * calculated dynamically.
+		 * 
+		 * @type {Number}
+		 * @default undefined
+		 * @since 2.1.9
+		 * @product highstock
+		 * @deprecated true
+		 */
+		height: undefined, // reserved space for buttons and input
+
+		/**
+		 * Positioning for the input boxes. Allowed properties are `align`,
+		 *  `x` and `y`.
+		 * 
+		 * @type {Object}
+		 * @default { align: "right" }
+		 * @since 1.2.4
+		 * @product highstock
+		 */
 		inputPosition: {
-			align: 'right'
+			/**
+			 * The alignment of the input box. Allowed properties are `left`,
+			 * `center`, `right`.
+ 			 * @validvalue ["left", "center", "right"]
+ 			 * @sample {highstock} stock/rangeselector/input-button-position/ 
+ 			 *         Alignment
+ 			 * @since 6.0.0
+			 */
+			align: 'right',
+			x: 0,
+			y: 0
+		},
+
+		/**
+		 * Positioning for the button row.
+		 * 
+		 * @since 1.2.4
+		 * @product highstock
+		 */
+		buttonPosition: {
+			/**
+			 * The alignment of the input box. Allowed properties are `left`,
+			 * `center`, `right`.
+ 			 *
+ 			 * @validvalue ["left", "center", "right"]
+ 			 * @sample {highstock} stock/rangeselector/input-button-position/ 
+ 			 *         Alignment
+ 			 * @since 6.0.0
+			 */
+			align: 'left',
+			/**
+			 * X offset of the button row.
+			 */
+			x: 0,
+			/**
+			 * Y offset of the button row.
+			 */
+			y: 0
 		},
 		// inputDateFormat: '%b %e, %Y',
 		// inputEditDateFormat: '%Y-%m-%d',
@@ -55,17 +184,78 @@ extend(defaultOptions, {
 		// selected: undefined,
 		/*= if (build.classic) { =*/
 		// inputStyle: {},
+
+		/**
+		 * CSS styles for the labels - the Zoom, From and To texts.
+		 * 
+		 * In styled mode, the labels are styled by the `.highcharts-range-label` class.
+		 * 
+		 * @type {CSSObject}
+		 * @sample {highstock} stock/rangeselector/styling/ Styling the buttons and inputs
+		 * @product highstock
+		 */
 		labelStyle: {
 			color: '${palette.neutralColor60}'
 		}
 		/*= } =*/
 	}
 });
-defaultOptions.lang = merge(defaultOptions.lang, {
-	rangeSelectorZoom: 'Zoom',
-	rangeSelectorFrom: 'From',
-	rangeSelectorTo: 'To'
-});
+
+defaultOptions.lang = merge(
+	defaultOptions.lang, 
+	/**
+	 * Language object. The language object is global and it can't be set
+	 * on each chart initiation. Instead, use `Highcharts.setOptions` to
+	 * set it before any chart is initialized.
+	 * 
+	 * <pre>Highcharts.setOptions({
+	 *     lang: {
+	 *         months: [
+	 *             'Janvier', 'Février', 'Mars', 'Avril',
+	 *             'Mai', 'Juin', 'Juillet', 'Août',
+	 *             'Septembre', 'Octobre', 'Novembre', 'Décembre'
+	 *         ],
+	 *         weekdays: [
+	 *             'Dimanche', 'Lundi', 'Mardi', 'Mercredi',
+	 *             'Jeudi', 'Vendredi', 'Samedi'
+	 *         ]
+	 *     }
+	 * });</pre>
+	 *
+	 * @optionparent lang
+	 * @product highstock
+	 */
+	{
+
+		/**
+		 * The text for the label for the range selector buttons.
+		 * 
+		 * @type {String}
+		 * @default Zoom
+		 * @product highstock
+		 */
+		rangeSelectorZoom: 'Zoom',
+
+		/**
+		 * The text for the label for the "from" input box in the range
+		 * selector.
+		 * 
+		 * @type {String}
+		 * @default From
+		 * @product highstock
+		 */
+		rangeSelectorFrom: 'From',
+
+		/**
+		 * The text for the label for the "to" input box in the range selector.
+		 * 
+		 * @type {String}
+		 * @default To
+		 * @product highstock
+		 */
+		rangeSelectorTo: 'To'
+	}
+);
 
 /**
  * The range selector.
@@ -177,6 +367,10 @@ RangeSelector.prototype = {
 			newMin = dataMin;
 			newMax = dataMax;
 		}
+
+		newMin += rangeOptions._offsetMin;
+		newMax += rangeOptions._offsetMax;
+
 		rangeSelector.setSelected(i);
 
 		// Update the chart
@@ -253,11 +447,11 @@ RangeSelector.prototype = {
 			blurInputs = function () {
 				var minInput = rangeSelector.minInput,
 					maxInput = rangeSelector.maxInput;
-				if (minInput && minInput.blur) { //#3274 in some case blur is not defined
-					fireEvent(minInput, 'blur'); //#3274
+				if (minInput && minInput.blur) { // #3274 in some case blur is not defined
+					fireEvent(minInput, 'blur'); // #3274
 				}
-				if (maxInput && maxInput.blur) { //#3274 in some case blur is not defined
-					fireEvent(maxInput, 'blur'); //#3274
+				if (maxInput && maxInput.blur) { // #3274 in some case blur is not defined
+					fireEvent(maxInput, 'blur'); // #3274
 				}
 			};
 
@@ -282,12 +476,14 @@ RangeSelector.prototype = {
 
 		addEvent(chart, 'load', function () {
 			// If a data grouping is applied to the current button, release it when extremes change
-			addEvent(chart.xAxis[0], 'setExtremes', function (e) {
-				if (this.max - this.min !== chart.fixedRange && e.trigger !== 'rangeSelectorButton' &&
-						e.trigger !== 'updatedData' && rangeSelector.forcedDataGrouping) {
-					this.setDataGrouping(false, false);
-				}
-			});
+			if (chart.xAxis && chart.xAxis[0]) {
+				addEvent(chart.xAxis[0], 'setExtremes', function (e) {
+					if (this.max - this.min !== chart.fixedRange && e.trigger !== 'rangeSelectorButton' &&
+							e.trigger !== 'updatedData' && rangeSelector.forcedDataGrouping) {
+						this.setDataGrouping(false, false);
+					}
+				});
+			}
 		});
 	},
 
@@ -320,6 +516,7 @@ RangeSelector.prototype = {
 				state = 0,
 				disable,
 				select,
+				offsetRange = rangeOptions._offsetMax - rangeOptions._offsetMin,
 				isSelected = i === selected,
 				// Disable buttons where the range exceeds what is allowed in the current view
 				isTooGreatRange = range > dataMax - dataMin,
@@ -333,12 +530,12 @@ RangeSelector.prototype = {
 			// Months and years have a variable range so we check the extremes
 			if (
 				(type === 'month' || type === 'year') &&
-				(actualRange >= { month: 28, year: 365 }[type] * day * count) &&
-				(actualRange <= { month: 31, year: 366 }[type] * day * count)
+				(actualRange >= { month: 28, year: 365 }[type] * day * count + offsetRange) &&
+				(actualRange <= { month: 31, year: 366 }[type] * day * count + offsetRange)
 			) {
 				isSameRange = true;
 			} else if (type === 'ytd') {
-				isSameRange = (ytdMax - ytdMin) === actualRange;
+				isSameRange = (ytdMax - ytdMin + offsetRange) === actualRange;
 				isYTDButNotSelected = !isSelected;
 			} else if (type === 'all') {
 				isSameRange = baseAxis.max - baseAxis.min >= dataMax - dataMin;
@@ -399,6 +596,10 @@ RangeSelector.prototype = {
 		} else if (type === 'month' || type === 'year') {
 			rangeOptions._range = { month: 30, year: 365 }[type] * 24 * 36e5 * count;
 		}
+
+		rangeOptions._offsetMin = pick(rangeOptions.offsetMin, 0);
+		rangeOptions._offsetMax = pick(rangeOptions.offsetMax, 0);
+		rangeOptions._range += rangeOptions._offsetMax - rangeOptions._offsetMin;
 	},
 
 	/**
@@ -573,7 +774,7 @@ RangeSelector.prototype = {
 			textAlign: 'center',
 			fontSize: chartStyle.fontSize,
 			fontFamily: chartStyle.fontFamily,
-			left: '-9em' // #4798
+			top: '-9999em' // #4798
 		}, options.inputStyle));
 		/*= } =*/
 
@@ -603,11 +804,11 @@ RangeSelector.prototype = {
 	getPosition: function () {
 		var chart = this.chart,
 			options = chart.options.rangeSelector,
-			buttonTop = pick((options.buttonPosition || {}).y, chart.plotTop - chart.axisOffset[0] - options.height);
+			top = (options.verticalAlign) === 'top' ? chart.plotTop - chart.axisOffset[0] : 0; // set offset only for varticalAlign top
 
 		return {
-			buttonTop: buttonTop,
-			inputTop: buttonTop - 10
+			buttonTop: top + options.buttonPosition.y,
+			inputTop: top + options.inputPosition.y - 10
 		};
 	},
 	/**
@@ -648,21 +849,35 @@ RangeSelector.prototype = {
 			chartOptions = chart.options,
 			navButtonOptions = chartOptions.exporting && chartOptions.exporting.enabled !== false &&
 				chartOptions.navigation && chartOptions.navigation.buttonOptions,
-			options = chartOptions.rangeSelector,
-			buttons = rangeSelector.buttons,
 			lang = defaultOptions.lang,
 			div = rangeSelector.div,
+			options = chartOptions.rangeSelector,
+			floating = options.floating,
+			buttons = rangeSelector.buttons,
 			inputGroup = rangeSelector.inputGroup,
 			buttonTheme = options.buttonTheme,
-			buttonPosition = options.buttonPosition || {},
+			buttonPosition = options.buttonPosition,
+			inputPosition = options.inputPosition,
 			inputEnabled = options.inputEnabled,
 			states = buttonTheme && buttonTheme.states,
 			plotLeft = chart.plotLeft,
 			buttonLeft,
-			pos = this.getPosition(),
-			buttonGroup = rangeSelector.group,
-			buttonBBox,
-			rendered = rangeSelector.rendered;
+			buttonGroup = rangeSelector.buttonGroup,
+			group,
+			groupHeight,
+			rendered = rangeSelector.rendered,
+			verticalAlign = rangeSelector.options.verticalAlign,
+			legend = chart.legend,
+			legendOptions = legend && legend.options,
+			buttonPositionY = buttonPosition.y,
+			inputPositionY = inputPosition.y,
+			animate = rendered || false,
+			exportingX = 0,
+			alignTranslateY,
+			legendHeight,
+			minPosition,
+			translateY = 0,
+			translateX;
 
 		if (options.enabled === false) {
 			return;
@@ -671,22 +886,41 @@ RangeSelector.prototype = {
 		// create the elements
 		if (!rendered) {
 
-			rangeSelector.group = buttonGroup = renderer.g('range-selector-buttons').add();
+			rangeSelector.group = group = renderer.g('range-selector-group')
+				.attr({
+					zIndex: 7
+				})
+				.add();
+			
+			rangeSelector.buttonGroup = buttonGroup = renderer.g('range-selector-buttons').add(group);
 
-			rangeSelector.zoomText = renderer.text(lang.rangeSelectorZoom, pick(buttonPosition.x, plotLeft), 15)
+			rangeSelector.zoomText = renderer.text(lang.rangeSelectorZoom, pick(plotLeft + buttonPosition.x, plotLeft), 15)
 				.css(options.labelStyle)
 				.add(buttonGroup);
 
-			// button starting position
-			buttonLeft = pick(buttonPosition.x, plotLeft) + rangeSelector.zoomText.getBBox().width + 5;
+			// button start position
+			buttonLeft = pick(plotLeft + buttonPosition.x, plotLeft) + rangeSelector.zoomText.getBBox().width + 5;
 
 			each(rangeSelector.buttonOptions, function (rangeOptions, i) {
+
 				buttons[i] = renderer.button(
 						rangeOptions.text,
 						buttonLeft,
 						0,
 						function () {
-							rangeSelector.clickButton(i);
+
+							// extract events from button object and call
+							var buttonEvents = rangeOptions.events && rangeOptions.events.click,
+								callDefaultEvent;
+
+							if (buttonEvents) {
+								callDefaultEvent = buttonEvents.call(rangeOptions);
+							}
+							
+							if (callDefaultEvent !== false) {
+								rangeSelector.clickButton(i);
+							}
+							
 							rangeSelector.isActive = true;
 						},
 						buttonTheme,
@@ -716,68 +950,246 @@ RangeSelector.prototype = {
 
 				// Create the group to keep the inputs
 				rangeSelector.inputGroup = inputGroup = renderer.g('input-group')
-					.add();
+					.add(group);
 				inputGroup.offset = 0;
 
 				rangeSelector.drawInput('min');
 				rangeSelector.drawInput('max');
 			}
 		}
+
+		plotLeft = chart.plotLeft - chart.spacing[3];
 		rangeSelector.updateButtonStates();
 
-		// Set or update the group position
-		buttonGroup[rendered ? 'animate' : 'attr']({
-			translateY: pos.buttonTop
-		});
+		// detect collisiton with exporting
+		if 
+			(
+				navButtonOptions && 
+				this.titleCollision(chart) &&
+				verticalAlign === 'top' && 
+				buttonPosition.align === 'right' && 
+				(
+					(buttonPosition.y + buttonGroup.getBBox().height - 12) < 
+					((navButtonOptions.y || 0) + navButtonOptions.height)
+				)
+			) {
+			exportingX = -40; 
+		}
+
+		if (buttonPosition.align === 'left') {
+			translateX = buttonPosition.x - chart.spacing[3];
+		} else if (buttonPosition.align === 'right') {
+			translateX = buttonPosition.x + exportingX - chart.spacing[1];
+		} 
+
+		// align button group
+		buttonGroup.align({
+			y: buttonPosition.y,
+			width: buttonGroup.getBBox().width,
+			align: buttonPosition.align,
+			x: translateX
+		}, true, chart.spacingBox);
+
+		// skip animation
+		rangeSelector.group.placed = animate;
+		rangeSelector.buttonGroup.placed = animate;
 
 		if (inputEnabled !== false) {
 
-			// Update the alignment to the updated spacing box
-			inputGroup.align(extend({
-				y: pos.inputTop,
-				width: inputGroup.offset,
-				// Detect collision with the exporting buttons
-				x: navButtonOptions && (pos.inputTop < (navButtonOptions.y || 0) + navButtonOptions.height - chart.spacing[0]) ?
-					-40 : 0
-			}, options.inputPosition), true, chart.spacingBox);
+			var inputGroupX,
+				inputGroupWidth,
+				buttonGroupX,
+				buttonGroupWidth;
 
-			// Hide if overlapping - inputEnabled is null or undefined
-			if (!defined(inputEnabled)) {
-				buttonBBox = buttonGroup.getBBox();
-				inputGroup[inputGroup.alignAttr.translateX < buttonBBox.x + buttonBBox.width + 10 ? 'hide' : 'show']();
+			// detect collision with exporting
+			if 
+				(
+					navButtonOptions && 
+					this.titleCollision(chart) &&
+					verticalAlign === 'top' && 
+					inputPosition.align === 'right' && 
+					(
+						(inputPosition.y - inputGroup.getBBox().height - 12) < 
+						((navButtonOptions.y || 0) + navButtonOptions.height + chart.spacing[0])
+					)
+				) {
+				exportingX = -40; 
+			} else {
+				exportingX = 0;
 			}
+
+			if (inputPosition.align === 'left') {
+				translateX = plotLeft;
+			} else if (inputPosition.align === 'right') { 
+				translateX = -Math.max(chart.axisOffset[1], -exportingX); // yAxis offset
+			}
+
+			// Update the alignment to the updated spacing box
+			inputGroup.align({
+				y: inputPosition.y,
+				width: inputGroup.getBBox().width,
+				align: inputPosition.align,
+				x: inputPosition.x + translateX - 2 // fix wrong getBBox() value on right align 
+			}, true, chart.spacingBox);
+
+			// detect collision
+			inputGroupX = inputGroup.alignAttr.translateX + inputGroup.alignOptions.x - 
+							exportingX + inputGroup.getBBox().x + 2; // getBBox for detecing left margin, 2px padding to not overlap input and label
+
+			inputGroupWidth = inputGroup.alignOptions.width;
+
+			buttonGroupX = buttonGroup.alignAttr.translateX + buttonGroup.getBBox().x;
+			buttonGroupWidth = buttonGroup.getBBox().width + 20; // 20 is minimal spacing between elements
+
+			if (
+					(inputPosition.align === buttonPosition.align) || 
+					(
+						(buttonGroupX + buttonGroupWidth > inputGroupX) && 
+						(inputGroupX + inputGroupWidth > buttonGroupX) && 
+						(buttonPositionY < (inputPositionY + inputGroup.getBBox().height))
+					)
+				)  {
+				
+				inputGroup.attr({
+					translateX: inputGroup.alignAttr.translateX + (chart.axisOffset[1] >= -exportingX ? 0 : -exportingX),
+					translateY: inputGroup.alignAttr.translateY + buttonGroup.getBBox().height + 10
+				});
+
+			} 
 
 			// Set or reset the input values
 			rangeSelector.setInputValue('min', min);
 			rangeSelector.setInputValue('max', max);
+
+			// skip animation
+			rangeSelector.inputGroup.placed = animate;
+		}
+
+		// vertical align
+		rangeSelector.group.align({
+			verticalAlign: verticalAlign
+		}, true, chart.spacingBox);
+
+		// set position 
+		groupHeight = rangeSelector.group.getBBox().height + 20; // # 20 padding
+		alignTranslateY = rangeSelector.group.alignAttr.translateY;
+
+		// calculate bottom position 
+		if (verticalAlign === 'bottom') {
+			legendHeight = legendOptions && legendOptions.verticalAlign === 'bottom' && legendOptions.enabled && 
+							!legendOptions.floating ? legend.legendHeight + pick(legendOptions.margin, 10) : 0;
+
+			groupHeight = groupHeight + legendHeight - 20;
+			translateY = alignTranslateY - groupHeight - (floating ? 0 : options.y) - 10; // 10 spacing
+
+		} 
+
+		if (verticalAlign === 'top') {
+			if (floating) {
+				translateY = 0;
+			} 
+
+			if (chart.titleOffset) {
+				translateY = chart.titleOffset + chart.options.title.margin;
+			}
+
+			translateY += ((chart.margin[0] - chart.spacing[0]) || 0);
+
+		} else if (verticalAlign === 'middle') {
+			if (inputPositionY === buttonPositionY) {
+				if (inputPositionY < 0) {
+					translateY = alignTranslateY + minPosition;
+				} else {
+					translateY = alignTranslateY;
+				}
+			} else if (inputPositionY || buttonPositionY) {
+				if (inputPositionY < 0 || buttonPositionY < 0) {
+					translateY -= Math.min(inputPositionY, buttonPositionY);
+				} else {
+					translateY = alignTranslateY - groupHeight + minPosition;
+				}
+			}
+		}
+
+		rangeSelector.group.translate(
+			options.x,
+			options.y + Math.floor(translateY)
+		); 
+
+		// translate HTML inputs
+		if (inputEnabled !== false) {
+			rangeSelector.minInput.style.marginTop = rangeSelector.group.translateY + 'px';
+			rangeSelector.maxInput.style.marginTop = rangeSelector.group.translateY + 'px';
 		}
 
 		rangeSelector.rendered = true;
 	},
 
+	/** 
+	 * Extracts height of range selector 
+	 * @return {Number} Returns rangeSelector height
+	 */
+	getHeight: function () {
+		var rangeSelector = this,
+			options = rangeSelector.options,
+			rangeSelectorGroup = rangeSelector.group,
+			inputPosition = options.inputPosition,
+			buttonPosition = options.buttonPosition,
+			yPosition = options.y,
+			buttonPositionY = buttonPosition.y,
+			inputPositionY = inputPosition.y,
+			rangeSelectorHeight = 0,
+			minPosition;
+
+		rangeSelectorHeight = rangeSelectorGroup ? (rangeSelectorGroup.getBBox(true).height) + 13 + yPosition : 0; // 13px to keep back compatibility
+
+		minPosition = Math.min(inputPositionY, buttonPositionY);
+
+		if (
+			(inputPositionY < 0 && buttonPositionY < 0) || 
+			(inputPositionY > 0 && buttonPositionY > 0)
+		) {
+			rangeSelectorHeight += Math.abs(minPosition);
+		}
+
+		return rangeSelectorHeight;
+	},
+
+	/**
+	 * Detect collision with title or subtitle
+	 * @param {object} chart
+	 * @return {Boolean} Returns collision status
+	 */
+	titleCollision: function (chart) {
+		return !(chart.options.title.text || chart.options.subtitle.text);
+	},
+
 	/**
 	 * Update the range selector with new options
+	 * @param {object} options
 	 */
 	update: function (options) {
 		var chart = this.chart;
+
 		merge(true, chart.options.rangeSelector, options);
 		this.destroy();
 		this.init(chart);
+		chart.rangeSelector.render();
 	},
 
 	/**
 	 * Destroys allocated elements.
 	 */
 	destroy: function () {
-		var minInput = this.minInput,
-			maxInput = this.maxInput,
-			key;
+		var rSelector = this,
+			minInput = rSelector.minInput,
+			maxInput = rSelector.maxInput;
 
-		this.unMouseDown();
-		this.unResize();
+		rSelector.unMouseDown();
+		rSelector.unResize();
 
 		// Destroy elements in collections
-		destroyObjectProperties(this.buttons);
+		destroyObjectProperties(rSelector.buttons);
 
 		// Clear input element events
 		if (minInput) {
@@ -788,18 +1200,18 @@ RangeSelector.prototype = {
 		}
 
 		// Destroy HTML and SVG elements
-		for (key in this) {
-			if (this[key] && key !== 'chart') {
-				if (this[key].destroy) { // SVGElement
-					this[key].destroy();
-				} else if (this[key].nodeType) { // HTML element
+		H.objectEach(rSelector, function (val, key) {
+			if (val && key !== 'chart') {
+				if (val.destroy) { // SVGElement
+					val.destroy();
+				} else if (val.nodeType) { // HTML element
 					discardElement(this[key]);
 				}
 			}
-			if (this[key] !== RangeSelector.prototype[key]) {
-				this[key] = null;
+			if (val !== RangeSelector.prototype[key]) {
+				rSelector[key] = null;
 			}
-		}
+		}, this);
 	}
 };
 
@@ -850,8 +1262,15 @@ Axis.prototype.minFromRange = function () {
 		range,
 		// Get the true range from a start date
 		getTrueRange = function (base, count) {
-			var date = new Date(base);
-			date['set' + timeName](date['get' + timeName]() + count);
+			var date = new Date(base),
+				basePeriod = date['get' + timeName]();
+
+			date['set' + timeName](basePeriod + count);
+
+			if (basePeriod === date['get' + timeName]()) {
+				date.setDate(0); // #6537
+			}
+
 			return date.getTime() - base;
 		};
 
@@ -885,7 +1304,7 @@ Axis.prototype.minFromRange = function () {
 
 };
 
-// Initialize scroller for stock charts
+// Initialize rangeselector for stock charts
 wrap(Chart.prototype, 'init', function (proceed, options, callback) {
 
 	addEvent(this, 'init', function () {
@@ -897,6 +1316,111 @@ wrap(Chart.prototype, 'init', function (proceed, options, callback) {
 	proceed.call(this, options, callback);
 
 });
+
+wrap(Chart.prototype, 'render', function (proceed, options, callback) {
+
+	var chart = this,
+		axes = chart.axes,
+		rangeSelector = chart.rangeSelector,
+		verticalAlign;
+
+	if (rangeSelector) {
+
+		each(axes, function (axis) {
+			axis.updateNames();
+			axis.setScale();
+		});
+
+		chart.getAxisMargins();
+
+		rangeSelector.render();
+		verticalAlign = rangeSelector.options.verticalAlign;
+
+		if (!rangeSelector.options.floating) {
+			if (verticalAlign === 'bottom') {
+				this.extraBottomMargin = true;
+			} else if (verticalAlign !== 'middle') {
+				this.extraTopMargin = true;
+			}
+		}
+	}
+
+	proceed.call(this, options, callback);
+
+});
+
+wrap(Chart.prototype, 'update', function (proceed, options, redraw, oneToOne) {
+
+	var chart = this,
+		rangeSelector = chart.rangeSelector,
+		verticalAlign;
+
+	this.extraBottomMargin = false;
+	this.extraTopMargin = false;
+
+	if (rangeSelector) {
+
+		rangeSelector.render();
+
+		verticalAlign = (options.rangeSelector && options.rangeSelector.verticalAlign) || 
+						(rangeSelector.options && rangeSelector.options.verticalAlign);
+
+		if (!rangeSelector.options.floating) {
+			if (verticalAlign === 'bottom') {
+				this.extraBottomMargin = true;
+			} else if (verticalAlign !== 'middle') {
+				this.extraTopMargin = true;
+			}
+		}
+	}
+
+	proceed.call(this, H.merge(true, options, {
+		chart: {
+			marginBottom: pick(options.chart && options.chart.marginBottom, chart.margin.bottom),
+			spacingBottom: pick(options.chart && options.chart.spacingBottom, chart.spacing.bottom)
+		}
+	}), redraw, oneToOne);
+
+});
+
+wrap(Chart.prototype, 'redraw', function (proceed, options, callback) {
+	var chart = this,
+		rangeSelector = chart.rangeSelector,
+		verticalAlign;
+
+	if (rangeSelector && !rangeSelector.options.floating) {
+
+		rangeSelector.render();
+		verticalAlign = rangeSelector.options.verticalAlign;
+
+		if (verticalAlign === 'bottom') {
+			this.extraBottomMargin = true;
+		} else if (verticalAlign !== 'middle') {
+			this.extraTopMargin = true;
+		}
+	}
+
+	proceed.call(this, options, callback);
+});
+
+Chart.prototype.adjustPlotArea = function () {
+	var chart = this,
+		rangeSelector = chart.rangeSelector,
+		rangeSelectorHeight;
+
+	if (this.rangeSelector) {
+
+		rangeSelectorHeight = rangeSelector.getHeight();
+			
+		if (this.extraTopMargin) {
+			this.plotTop += rangeSelectorHeight;
+		}
+
+		if (this.extraBottomMargin) {
+			this.marginBottom += rangeSelectorHeight;
+		}
+	}
+};
 
 Chart.prototype.callbacks.push(function (chart) {
 	var extremes,
@@ -941,5 +1465,5 @@ Chart.prototype.callbacks.push(function (chart) {
 H.RangeSelector = RangeSelector;
 
 /* ****************************************************************************
- * End Range Selector code													*
+ * End Range Selector code													 *
  *****************************************************************************/

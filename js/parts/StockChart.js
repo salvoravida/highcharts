@@ -12,7 +12,6 @@ import './Point.js';
 import './Pointer.js';
 import './Series.js';
 import './SvgRenderer.js';
-import './VmlRenderer.js';
 var arrayMax = H.arrayMax,
 	arrayMin = H.arrayMin,
 	Axis = H.Axis,
@@ -21,6 +20,7 @@ var arrayMax = H.arrayMax,
 	each = H.each,
 	extend = H.extend,
 	format = H.format,
+	grep = H.grep,
 	inArray = H.inArray,
 	isNumber = H.isNumber,
 	isString = H.isString,
@@ -40,8 +40,86 @@ var arrayMax = H.arrayMax,
 	seriesInit = seriesProto.init, 
 	seriesProcessData = seriesProto.processData,
 	pointTooltipFormatter = Point.prototype.tooltipFormatter;
+
+
 /**
- * A wrapper for Chart with all the default values for a Stock chart
+ * Compare the values of the series against the first non-null, non-
+ * zero value in the visible range. The y axis will show percentage
+ * or absolute change depending on whether `compare` is set to `"percent"`
+ * or `"value"`. When this is applied to multiple series, it allows
+ * comparing the development of the series against each other.
+ * 
+ * @type {String}
+ * @see [compareBase](#plotOptions.series.compareBase), [Axis.setCompare()](#Axis.
+ * setCompare())
+ * @sample {highstock} stock/plotoptions/series-compare-percent/ Percent
+ * @sample {highstock} stock/plotoptions/series-compare-value/ Value
+ * @default undefined
+ * @since 1.0.1
+ * @product highstock
+ * @apioption plotOptions.series.compare
+ */
+
+/**
+ * Defines if comparisson should start from the first point within the visible
+ * range or should start from the first point <b>before</b> the range.
+ * In other words, this flag determines if first point within the visible range
+ * will have 0% (`compareStart=true`) or should have been already calculated
+ * according to the previous point (`compareStart=false`).
+ *
+ * @type {Boolean}
+ * @sample {highstock} stock/plotoptions/series-comparestart/ Calculate compare within visible range
+ * @default false
+ * @since 6.0.0
+ * @product highstock
+ * @apioption plotOptions.series.compareStart
+ */
+
+/**
+ * When [compare](#plotOptions.series.compare) is `percent`, this option
+ * dictates whether to use 0 or 100 as the base of comparison.
+ * 
+ * @validvalue [0, 100]
+ * @type {Number}
+ * @sample {highstock} / Compare base is 100
+ * @default 0
+ * @since 5.0.6
+ * @product highstock
+ * @apioption plotOptions.series.compareBase
+ */
+
+/**
+ * Factory function for creating new stock charts. Creates a new {@link Chart|
+ * Chart} object with different default options than the basic Chart.
+ * 
+ * @function #stockChart
+ * @memberOf Highcharts
+ *
+ * @param  {String|HTMLDOMElement} renderTo
+ *         The DOM element to render to, or its id.
+ * @param  {Options} options
+ *         The chart options structure as described in the {@link
+ *         https://api.highcharts.com/highstock|options reference}.
+ * @param  {Function} callback
+ *         A function to execute when the chart object is finished loading and
+ *         rendering. In most cases the chart is built in one thread, but in
+ *         Internet Explorer version 8 or less the chart is sometimes initialized
+ *         before the document is ready, and in these cases the chart object
+ *         will not be finished synchronously. As a consequence, code that
+ *         relies on the newly built Chart object should always run in the
+ *         callback. Defining a {@link https://api.highcharts.com/highstock/chart.events.load|
+ *         chart.event.load} handler is equivalent.
+ *
+ * @return {Chart}
+ *         The chart object.
+ *
+ * @example
+ * var chart = Highcharts.stockChart('container', {
+ *     series: [{
+ *         data: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+ *         pointInterval: 24 * 60 * 60 * 1000
+ *     }]
+ * });
  */
 H.StockChart = H.stockChart = function (a, b, c) {
 	var hasRenderToArg = isString(a) || a.nodeName,
@@ -81,6 +159,7 @@ H.StockChart = H.stockChart = function (a, b, c) {
 			{ // defaults
 				minPadding: 0,
 				maxPadding: 0,
+				overscroll: 0,
 				ordinal: true,
 				title: {
 					text: null
@@ -108,7 +187,14 @@ H.StockChart = H.stockChart = function (a, b, c) {
 				y: -2
 			},
 			opposite: opposite,
+
+			/**
+			 * @default {highcharts} true
+			 * @default {highstock} false
+			 * @apioption yAxis.showLastLabel
+			 */
 			showLastLabel: false,
+
 			title: {
 				text: null
 			}
@@ -141,7 +227,7 @@ H.StockChart = H.stockChart = function (a, b, c) {
 				text: null
 			},
 			tooltip: {
-				shared: true,
+				split: true,
 				crosshairs: true
 			},
 			legend: {
@@ -198,7 +284,7 @@ wrap(Axis.prototype, 'autoLabelAlign', function (proceed) {
 			return 'right';
 		}
 	}
-	return proceed.call(this, [].slice.call(arguments, 1));
+	return proceed.apply(this, [].slice.call(arguments, 1));
 });
 
 // Clear axis from label panes (#6071)
@@ -210,7 +296,7 @@ wrap(Axis.prototype, 'destroy', function (proceed) {
 		delete chart._labelPanes[key];
 	}
 
-	return proceed.call(this, Array.prototype.slice.call(arguments, 1));
+	return proceed.apply(this, Array.prototype.slice.call(arguments, 1));
 });
 
 // Override getPlotLinePath to allow for multipane charts
@@ -226,7 +312,7 @@ wrap(Axis.prototype, 'getPlotLinePath', function (proceed, value, lineWidth, old
 		x2,
 		y2,
 		result = [],
-		axes = [], //#3416 need a default array
+		axes = [], // #3416 need a default array
 		axes2,
 		uniqueAxes,
 		transVal;
@@ -254,8 +340,8 @@ wrap(Axis.prototype, 'getPlotLinePath', function (proceed, value, lineWidth, old
 		});
 	}
 
-	// Ignore in case of color Axis. #3360, #3524
-	if (axis.coll === 'colorAxis') {
+	// Ignore in case of colorAxis or zAxis. #3360, #3524, #6720
+	if (axis.coll !== 'xAxis' && axis.coll !== 'yAxis') {
 		return proceed.apply(this, [].slice.call(arguments, 1));
 	}
 
@@ -279,9 +365,15 @@ wrap(Axis.prototype, 'getPlotLinePath', function (proceed, value, lineWidth, old
 	// Remove duplicates in the axes array. If there are no axes in the axes array,
 	// we are adding an axis without data, so we need to populate this with grid
 	// lines (#2796).
-	uniqueAxes = axes.length ? [] : [axis.isXAxis ? chart.yAxis[0] : chart.xAxis[0]]; //#3742
+	uniqueAxes = axes.length ? [] : [axis.isXAxis ? chart.yAxis[0] : chart.xAxis[0]]; // #3742
 	each(axes, function (axis2) {
-		if (inArray(axis2, uniqueAxes) === -1) {
+		if (
+			inArray(axis2, uniqueAxes) === -1 &&
+			// Do not draw on axis which overlap completely. #5424
+			!H.find(uniqueAxes, function (unique) {
+				return unique.pos === axis2.pos && unique.len && axis2.len;
+			})
+		) {
 			uniqueAxes.push(axis2);
 		}
 	});
@@ -330,39 +422,8 @@ wrap(Axis.prototype, 'getPlotLinePath', function (proceed, value, lineWidth, old
 	}
 	return result.length > 0 ?
 		renderer.crispPolyLine(result, lineWidth || 1) :
-		null; //#3557 getPlotLinePath in regular Highcharts also returns null
+		null; // #3557 getPlotLinePath in regular Highcharts also returns null
 });
-
-// Override getPlotBandPath to allow for multipane charts
-Axis.prototype.getPlotBandPath = function (from, to) {
-	var toPath = this.getPlotLinePath(to, null, null, true),
-		path = this.getPlotLinePath(from, null, null, true),
-		result = [],
-		i;
-
-	if (path && toPath) {
-		if (path.toString() === toPath.toString()) {
-			// #6166
-			result = path;
-			result.flat = true;
-		} else {
-			// Go over each subpath
-			for (i = 0; i < path.length; i += 6) {
-				result.push(
-					'M', path[i + 1], path[i + 2],
-					'L', path[i + 4], path[i + 5],
-					toPath[i + 4], toPath[i + 5],
-					toPath[i + 1], toPath[i + 2],
-					'z'
-				);
-			}
-		}
-	} else { // outside the axis area
-		result = null;
-	}
-
-	return result;
-};
 
 // Function to crisp a line with multiple segments
 SVGRenderer.prototype.crispPolyLine = function (points, width) {
@@ -552,7 +613,17 @@ seriesProto.init = function () {
 };
 
 /**
- * The setCompare method can be called also from the outside after render time
+ * Highstock only. Set the {@link
+ * http://api.highcharts.com/highstock/plotOptions.series.compare|
+ * compare} mode of the series after render time. In most cases it is more
+ * useful running {@link Axis#setCompare} on the X axis to update all its
+ * series.
+ *
+ * @function setCompare
+ * @memberOf Series.prototype
+ *
+ * @param  {String} compare
+ *         Can be one of `null`, `"percent"` or `"value"`.
  */
 seriesProto.setCompare = function (compare) {
 
@@ -601,6 +672,7 @@ seriesProto.processData = function () {
 		keyIndex = -1,
 		processedXData,
 		processedYData,
+		compareStart = series.options.compareStart === true ? 0 : 1,
 		length,
 		compareValue;
 
@@ -625,11 +697,15 @@ seriesProto.processData = function () {
 		}
 
 		// find the first value for comparison
-		for (i = 0; i < length - 1; i++) {
-			compareValue = keyIndex > -1 ? 
+		for (i = 0; i < length - compareStart; i++) {
+			compareValue = processedYData[i] && keyIndex > -1 ? 
 				processedYData[i][keyIndex] :
 				processedYData[i];
-			if (isNumber(compareValue) && processedXData[i + 1] >= series.xAxis.min && compareValue !== 0) {
+			if (
+				isNumber(compareValue) &&
+				processedXData[i + compareStart] >= series.xAxis.min &&
+				compareValue !== 0
+			) {
 				series.compareValue = compareValue;
 				break;
 			}
@@ -653,7 +729,23 @@ wrap(seriesProto, 'getExtremes', function (proceed) {
 });
 
 /**
- * Add a utility method, setCompare, to the Y axis
+ * Highstock only. Set the compare mode on all series belonging to an Y axis
+ * after render time.
+ *
+ * @param  {String} compare
+ *         The compare mode. Can be one of `null`, `"value"` or `"percent"`.
+ * @param  {Boolean} [redraw=true]
+ *         Whether to redraw the chart or to wait for a later call to {@link
+ *         Chart#redraw},
+ *
+ * @function setCompare
+ * @memberOf Axis.prototype
+ *
+ * @see    {@link https://api.highcharts.com/highstock/series.plotOptions.compare|
+ *         series.plotOptions.compare}
+ *
+ * @sample stock/members/axis-setcompare/
+ *         Set compoare
  */
 Axis.prototype.setCompare = function (compare, redraw) {
 	if (!this.isXAxis) {
@@ -721,4 +813,31 @@ wrap(Series.prototype, 'render', function (proceed) {
 		}
 	}
 	proceed.call(this);
+});
+
+wrap(Chart.prototype, 'getSelectedPoints', function (proceed) {
+	var points = proceed.call(this);
+
+	each(this.series, function (serie) {
+		// series.points - for grouped points (#6445)
+		if (serie.hasGroupedData) {
+			points = points.concat(grep(serie.points || [], function (point) {
+				return point.selected;
+			}));
+		}
+	});
+	return points;
+});
+
+wrap(Chart.prototype, 'update', function (proceed, options) {
+	// Use case: enabling scrollbar from a disabled state.
+	// Scrollbar needs to be initialized from a controller, Navigator in this
+	// case (#6615)
+	if ('scrollbar' in options && this.navigator) {
+		merge(true, this.options.scrollbar, options.scrollbar);
+		this.navigator.update({}, false);
+		delete options.scrollbar;
+	}
+
+	return proceed.apply(this, Array.prototype.slice.call(arguments, 1));
 });
